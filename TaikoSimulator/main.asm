@@ -25,7 +25,7 @@ window DWORD ?
 .code
 
 main PROC
-   mov esi, esp
+   mov esi, esp ; test
    push 0
    push 6
    push offset window_t
