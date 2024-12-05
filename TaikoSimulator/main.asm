@@ -2,7 +2,7 @@
 .XMM
 .model flat, c
 include csfml.inc
-
+; merge example
 .data
     ; ÀÉ®×¸ô®|
     musicPath db "assets/main/v_title.ogg", 0

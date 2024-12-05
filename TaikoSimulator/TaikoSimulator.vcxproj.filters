@@ -3,4 +3,7 @@
   <ItemGroup>
     <MASM Include="main.asm" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="csfml.inc" />
+  </ItemGroup>
 </Project>
