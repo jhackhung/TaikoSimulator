@@ -1,0 +1,175 @@
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/04/24 17:28:04
+main.asm						     Page 1 - 1
+
+
+				.386
+				.model flat, c
+
+				EXTERN sfRenderWindow_create:PROC
+				EXTERN sfRenderWindow_display:PROC
+				EXTERN sfRenderWindow_clear:PROC
+				EXTERN sfRenderWindow_destroy:PROC
+				EXTERN sfRenderWindow_pollEvent:PROC
+				EXTERN sfMusic_createFromFile:PROC
+				EXTERN sfMusic_play:PROC
+				EXTERN sfMusic_destroy:PROC
+
+ 0000000C			sfVideoMode STRUCT
+ 00000000  00000000			_width dd ?
+ 00000004  00000000			height dd ?
+ 00000008  00000000			bpp dd ?
+				sfVideoMode ENDS
+ 00000000			.data
+ 00000000 6E 65 76 65 72	    musicPath db "never-gonna-give-you-up-official-music-video.mp3", 0   ; 音樂檔案路徑
+	   2D 67 6F 6E 6E
+	   61 2D 67 69 76
+	   65 2D 79 6F 75
+	   2D 75 70 2D 6F
+	   66 66 69 63 69
+	   61 6C 2D 6D 75
+	   73 69 63 2D 76
+	   69 64 65 6F 2E
+	   6D 70 33 00
+ 00000031 53 46 4D 4C 20	    window_t byte "SFML Window", 0
+	   57 69 6E 64 6F
+	   77 00
+				    ; 修改結構體初始化，正確給定每個成員
+ 0000003D 00000000		    window_videoMode sfVideoMode <>
+	   00000000
+	   00000000
+
+ 00000049 00000000		window DWORD ?
+ 00000000			.code
+
+ 00000000			main PROC
+ 00000000  8B F4		   mov esi, esp ; test
+ 00000002  6A 00		   push 0
+ 00000004  6A 06		   push 6
+ 00000006  68 00000031 R	   push offset window_t
+ 0000000B  83 EC 0C		   sub esp, 12
+ 0000000E  8B C4		   mov eax, esp
+ 00000010  B9 00000320		   mov ecx, 800
+ 00000015  89 08		   mov [eax], ecx
+ 00000017  B9 00000258		   mov ecx, 600
+ 0000001C  89 48 04		   mov [eax+4], ecx
+ 0000001F  B9 00000020		   mov ecx, 32
+ 00000024  89 48 08		   mov [eax+8], ecx
+ 00000027  E8 00000000 E	    call sfRenderWindow_create
+ 0000002C  83 C4 18		    add esp, 24
+				   
+ 0000002F  A3 00000049 R	   mov window, eax
+
+				    ; 檢查是否成功創建視窗
+ 00000034  85 C0		    test eax, eax
+ 00000036  74 37		    jz exitLoop                    ; 若返回值為 0，則視窗創建失敗，退出
+
+ 00000038  8B D8		    mov ebx, eax                   ; 保存視窗指標
+
+				    ; 加載音樂
+ 0000003A  68 00000000 R	    push OFFSET musicPath
+ 0000003F  E8 00000000 E	    call sfMusic_createFromFile
+ 00000044  8B F8		    mov edi, eax  ; 保存音樂指標
+
+				    ; 播放音樂
+ 00000046  57			    push edi
+ 00000047  E8 00000000 E	    call sfMusic_play
+
+				    ; 主迴圈
+ 0000004C			mainLoop:
+				    ; 清空視窗
+ 0000004C  8B 1D 00000049 R	    mov ebx, window
+ 00000052  53			    push ebx
+ 00000053  E8 00000000 E	    call sfRenderWindow_clear
+ 00000058  5B			    pop ebx
+
+ 00000059  53			    push ebx
+				    ; 顯示視窗內容
+ 0000005A  E8 00000000 E	    call sfRenderWindow_display
+ 0000005F  5B			    pop ebx
+
+				    ; 檢查視窗是否被關閉
+ 00000060  E8 00000000 E	    call sfRenderWindow_pollEvent
+ 00000065  83 F8 00		    cmp eax, 0   ; 假設0表示沒有事件
+ 00000068  74 E2		    je mainLoop  ; 如果沒有事件，繼續迴圈
+
+				    ; 如果有事件，檢查是否為關閉事件
+ 0000006A  83 F8 01		    cmp eax, 1   ; 假設1是關閉事件
+				    ; je exitLoop
+
+				    ; 重新進入主迴圈
+ 0000006D  EB DD		    jmp mainLoop
+
+ 0000006F			exitLoop:
+				    ; 清理資源
+ 0000006F  57			    push edi
+ 00000070  E8 00000000 E	    call sfMusic_destroy
+
+ 00000075  53			    push ebx
+ 00000076  E8 00000000 E	    call sfRenderWindow_destroy
+
+ 0000007B  C3			    ret
+ 0000007C			main ENDP
+				END main
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/04/24 17:28:04
+main.asm						     Symbols 2 - 1
+
+
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+sfVideoMode  . . . . . . . . . .	 0000000C
+  _width . . . . . . . . . . . .	 00000000	 DWord
+  height . . . . . . . . . . . .	 00000004	 DWord
+  bpp  . . . . . . . . . . . . .	 00000008	 DWord
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000004D DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000007C DWord	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000007C Public C
+  mainLoop . . . . . . . . . . .	L Near	 0000004C _TEXT	
+  exitLoop . . . . . . . . . . .	L Near	 0000006F _TEXT	
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000001h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+musicPath  . . . . . . . . . . .	Byte	 00000000 _DATA	
+sfMusic_createFromFile . . . . .	L Near	 00000000 FLAT	External C
+sfMusic_destroy  . . . . . . . .	L Near	 00000000 FLAT	External C
+sfMusic_play . . . . . . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_clear . . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_create  . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_destroy . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_display . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_pollEvent . . . .	L Near	 00000000 FLAT	External C
+window_t . . . . . . . . . . . .	Byte	 00000031 _DATA	
+window_videoMode . . . . . . . .	sfVideoMode  0000003D _DATA	
+window . . . . . . . . . . . . .	DWord	 00000049 _DATA	
+
+	   0 Warnings
+	   0 Errors

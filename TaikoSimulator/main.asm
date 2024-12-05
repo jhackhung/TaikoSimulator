@@ -48,7 +48,7 @@ include csfml.inc
     two dd 2.0
     const_200 dd 200.0
 .code
-
+;hello
 create_window PROC
     push 0
     push 6
