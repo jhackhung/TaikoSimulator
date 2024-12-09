@@ -2,8 +2,9 @@
 .XMM
 .model flat, c
 include csfml.inc
-; merge example
+
 .data
+
     ; 檔案路徑
     musicPath db "assets/main/v_title.ogg", 0
     picPath db "assets/main/taiko_main.jpg", 0
@@ -27,15 +28,17 @@ include csfml.inc
     
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
-    window_realWidth dd 1280.0
+    window_realWidth dd 044a00000r ; 1280.0
     ; 事件結構
     event sfEvent <>
     
     ; 透明度相關
-    opacity dd 240.0
-    minOpacity dd 50.0
-    maxOpacity dd 240.0
-    deltaOpacity dd -0.05
+    opacity dd 043700000r ; 240.0
+    minOpacity dd 042480000r ; 50.0
+    maxOpacity dd 043700000r ; 240.0
+    deltaOpacity dd 0bdcccccdr ; -0.01
+    textColor sfColor <>
+    outlineColor sfColor <>
     
     ; 顏色常數
     titleColor sfColor <229, 109, 50, 255>
@@ -161,45 +164,199 @@ setup_title_text PROC
     add esp, 8
     
     ; Set position
-    ;sub esp, 16
-    ;lea eax, [esp]
+    sub esp, 16
+    lea eax, [esp]
 
-    ;push DWORD PTR [titleText]
-    ;call sfText_getLocalBounds
+    push DWORD PTR [titleText]
+    push eax
+    call sfText_getLocalBounds
+    add esp, 8
 
-    ;mov eax, DWORD PTR [esp]
-    ;mov ebx, DWORD PTR [esp+4]
-    ;mov ecx, DWORD PTR [esp+8]
-    ;mov edx, DWORD PTR [esp+12]
+    mov edx, DWORD PTR [eax]
+    mov DWORD PTR [titleBounds.left], edx
+    mov ecx, DWORD PTR [eax+4]
+    mov DWORD PTR [titleBounds.top], ecx
+    mov edx, DWORD PTR [eax+8]
+    mov DWORD PTR [titleBounds._width], edx
+    mov eax, DWORD PTR [eax+12]
+    mov DWORD PTR [titleBounds.height], eax
 
-    ;add esp, 16
+    add esp, 16
     
     ; Adjust position
-    ;movss xmm0, DWORD PTR [window_realWidth]
-    ;subss xmm0, DWORD PTR [titleBounds._width]
-    ;movss xmm1, DWORD PTR [two]
-    ;divss xmm0, xmm1
-    ;movss DWORD PTR [esp-8], xmm0
+    movss xmm0, DWORD PTR [window_realWidth]
+    subss xmm0, DWORD PTR [titleBounds._width]
+    movss xmm1, DWORD PTR [two]
+    divss xmm0, xmm1
+    movss DWORD PTR [esp-8], xmm0
     
-    ;movss xmm0, DWORD PTR [const_200]
-    ;movss DWORD PTR [esp-4], xmm0
+    movss xmm0, DWORD PTR [const_200]
+    movss DWORD PTR [esp-4], xmm0
 
-    ;push DWORD PTR [esp-4] ; y (200.0)
-    ;push DWORD PTR [esp-8] ; x (centered)
-    ;push DWORD PTR [titleText]
-    ;call sfText_setPosition
-    ;add esp, 12
-    
-    push 0
-    push 0
-    mov eax, DWORD PTR [titleText]
-    push eax
+    mov esi, esp
+
+    push DWORD PTR [esi-4] ; y (200.0)
+    push DWORD PTR [esi-8] ; x (centered)
+    push DWORD PTR [titleText]
     call sfText_setPosition
     add esp, 12
 
     ret
 setup_title_text ENDP
 
+; 設定提示文字
+setup_prompt_text PROC
+	; Create text object
+	call sfText_create
+	mov DWORD PTR [promptText], eax
+	
+	; Set font
+	push font
+	mov eax, DWORD PTR [promptText]
+	push eax
+	call sfText_setFont
+	add esp, 8
+	
+	; Set string
+	push offset prompt_string
+	mov eax, DWORD PTR [promptText]
+	push eax
+	call sfText_setString
+	add esp, 8
+	
+	; Set character size
+	push 45
+	mov eax, DWORD PTR [promptText]
+	push eax
+	call sfText_setCharacterSize
+	add esp, 8
+	
+	; Set fill color
+	push whiteColor
+	mov eax, DWORD PTR [promptText]
+	push eax
+	call sfText_setFillColor
+	add esp, 8
+
+    ; Set outline color
+    push redOutlineColor
+    push DWORD PTR [promptText]
+    call sfText_setOutlineColor
+    add esp, 8
+
+    ; Set outline thickness
+    movss xmm0, DWORD PTR [two]
+    sub esp, 4
+    movss DWORD PTR [esp], xmm0
+
+    push DWORD PTR [promptText]
+    call sfText_setOutlineThickness
+    add esp, 8
+	
+    ; Set position
+    sub esp, 16
+    lea eax, [esp]
+
+    push DWORD PTR [promptText]
+    push eax
+    call sfText_getLocalBounds
+    add esp, 8
+
+    mov edx, DWORD PTR [eax]
+    mov DWORD PTR [textBounds.left], edx
+    mov ecx, DWORD PTR [eax+4]
+    mov DWORD PTR [textBounds.top], ecx
+    mov edx, DWORD PTR [eax+8]
+    mov DWORD PTR [textBounds._width], edx
+    mov eax, DWORD PTR [eax+12]
+    mov DWORD PTR [textBounds.height], eax
+
+    add esp, 16
+
+	; Adjust position
+	movss xmm0, DWORD PTR [window_realWidth]
+	subss xmm0, DWORD PTR [textBounds._width]
+	movss xmm1, DWORD PTR [two]
+	divss xmm0, xmm1
+	movss DWORD PTR [esp-8], xmm0
+	
+	movss xmm0, DWORD PTR [const_200]
+    mulss xmm0, DWORD PTR [two]
+	movss DWORD PTR [esp-4], xmm0
+
+	mov esi, esp
+
+	push DWORD PTR [esi-4] ; y (400.0)
+	push DWORD PTR [esi-8] ; x (centered)
+	push DWORD PTR [promptText]
+	call sfText_setPosition
+	add esp, 12
+
+	ret
+setup_prompt_text ENDP
+
+update_text_opacity PROC
+    ; 載入當前透明度
+    fld dword ptr [opacity]
+    fadd dword ptr [deltaOpacity]
+    fstp dword ptr [opacity]
+    
+    ; 檢查透明度邊界
+    fld dword ptr [minOpacity]
+    fld dword ptr [opacity]
+    fcomip st(0), st(1)
+    fstp st(0)
+    jb reverse_opacity
+    
+    fld dword ptr [maxOpacity]
+    fld dword ptr [opacity]
+    fcomip st(0), st(1)
+    fstp st(0)
+    ja reverse_opacity
+
+continue_opacity:
+    ; 更新填充顏色透明度
+    cvttss2si eax, DWORD PTR [opacity] ; Floating-Point Value to Integer
+    movzx ecx, al
+    push ecx
+    push 255
+    push 255
+    push 255
+    call sfColor_fromRGBA
+    add esp, 16
+    mov DWORD PTR [textColor], eax
+
+    ; 更新輪廓顏色透明度
+    cvttss2si eax, DWORD PTR [opacity] ; Floating-Point Value to Integer
+    movzx ecx, al
+    push ecx
+    push 0
+    push 0
+    push 255
+    call sfColor_fromRGBA
+    add esp, 16
+    mov DWORD PTR [outlineColor], eax
+    
+    ; 設定透明顏色
+    push textColor
+    push DWORD PTR [promptText]
+    call sfText_setFillColor
+    add esp, 8
+    
+    push outlineColor
+    push DWORD PTR [promptText]
+    call sfText_setOutlineColor
+    add esp, 8
+    
+    ret
+
+reverse_opacity:
+    ; 反轉透明度變化方向
+    fld dword ptr [deltaOpacity]
+    fchs
+    fstp dword ptr [deltaOpacity]
+    jmp continue_opacity
+update_text_opacity ENDP
 
 main PROC
     ; 創建視窗
@@ -219,9 +376,19 @@ main PROC
     call setup_title_text
     
     ; 設定提示文字
-    ;call setup_prompt_text
+    call setup_prompt_text
 
 main_loop:
+    ; 更新透明度
+    call update_text_opacity
+    push 0
+    mov eax, DWORD PTR [promptText]
+    push eax
+    mov ecx, DWORD PTR [window]
+    push ecx
+    call sfRenderWindow_drawText
+    add esp, 12
+
     ; 清除視窗
     push blackColor
     push window
@@ -245,7 +412,13 @@ main_loop:
     push ecx
     call sfRenderWindow_drawText
     add esp, 12
-    
+
+    ; 繪製提示文字
+    push 0
+    push DWORD PTR [promptText]
+    push DWORD PTR [window]
+    call sfRenderWindow_drawText
+    add esp, 12
 
     ; 顯示視窗
     mov eax, DWORD PTR [window]
@@ -277,6 +450,7 @@ main_loop:
 
 start_game:
     ; 這裡可以添加進入音樂選擇頁面的邏輯
+
     jmp main_loop
 
 exit_program:
@@ -299,6 +473,15 @@ exit_program:
     push titleText
     call sfText_destroy
     add esp, 4
+
+    push promptText
+    call sfText_destroy
+    add esp, 4
+
+    push font
+    call sfFont_destroy
+    add esp, 4
+
 main ENDP
 
 END main
