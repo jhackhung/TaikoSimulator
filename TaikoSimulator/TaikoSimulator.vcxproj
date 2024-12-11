@@ -87,6 +87,7 @@
 ;csfml-window.lib
 ;csfml-system.lib;csfml-audio.lib</AdditionalDependencies>
       <GenerateMapFile>true</GenerateMapFile>
+      <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
     <MASM>
       <IncludePaths>$(ProjectDir);C:\Irvine</IncludePaths>
@@ -113,6 +114,7 @@
       <AdditionalLibraryDirectories>;%(AdditionalLibraryDirectories);C:\Irvine</AdditionalLibraryDirectories>
       <AdditionalDependencies>Irvine32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);</AdditionalDependencies>
       <GenerateMapFile>true</GenerateMapFile>
+      <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
     <PostBuildEvent>
       <Command>copy /y $(SolutionDir)TaikoSimulator\dll\* $(OutDir)</Command>
@@ -151,7 +153,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <MASM Include="end_game_page.asm" />
     <MASM Include="main.asm" />
+    <MASM Include="main_page.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include="csfml.inc" />
