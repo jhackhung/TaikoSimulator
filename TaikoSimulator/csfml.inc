@@ -20,11 +20,12 @@ sfEvtTextEntered          equ 4
 sfEvtKeyPressed           equ 5
 sfEvtKeyReleased          equ 6
 sfEvtMouseWheelMoved      equ 7
-sfEvtMouseButtonPressed   equ 8
-sfEvtMouseButtonReleased  equ 9
-sfEvtMouseMoved           equ 10
-sfEvtMouseEntered         equ 11
-sfEvtMouseLeft            equ 12
+sfEvtMouseWheelScrolled   equ 8
+sfEvtMouseButtonPressed   equ 9
+sfEvtMouseButtonReleased  equ 10
+sfEvtMouseMoved           equ 11
+sfEvtMouseEntered         equ 12
+sfEvtMouseLeft            equ 13
 
 ; sfMouseButton 定義
 sfMouseLeft   equ 0
@@ -32,7 +33,7 @@ sfMouseRight  equ 1
 sfMouseMiddle equ 2
 
 ; sfKey 定義
-sfKeyEnter    equ 36
+sfKeyEnter    equ 58
 
 ; 視窗風格定義
 sfNone       equ 0
