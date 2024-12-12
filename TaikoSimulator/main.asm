@@ -7,6 +7,7 @@ include csfml.inc
 ; 引用其他模組中的程序
 extern main_page_proc: PROC
 extern end_game_page: PROC
+extern select_music_page: PROC
 
 public currentPage
 
@@ -52,6 +53,9 @@ game_loop:
     cmp currentPage, 0
     je call_main_page    ; 如果是 0，呼叫 main_page_proc
 
+    cmp currentPage, 1
+    je call_select_music_page    ; 如果是 1，呼叫 select_music_page
+
     cmp currentPage, 2
     je call_end_game_page     ; 如果是 2，呼叫 end_game_page
     
@@ -68,6 +72,11 @@ call_main_page:
     add esp, 4
     jmp game_loop        ; 返回主迴圈
 
+call_select_music_page:
+	push DWORD PTR [window]
+	call select_music_page
+	add esp, 4
+	jmp game_loop
 
 call_end_game_page:
     push DWORD PTR [window]
