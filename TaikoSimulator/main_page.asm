@@ -37,7 +37,7 @@ extern currentPage: DWORD
     opacity dd 043700000r ; 240.0
     minOpacity dd 042480000r ; 50.0
     maxOpacity dd 043700000r ; 240.0
-    deltaOpacity dd 0bdcccccdr ; -0.01
+    deltaOpacity dd 0bdcccccdr ; -0.1
     textColor sfColor <>
     outlineColor sfColor <>
     
@@ -371,7 +371,8 @@ main_loop:
         ; 事件處理
         lea esi, event
         push esi
-        push window
+        mov eax, DWORD PTR [window]
+        push eax
         call sfRenderWindow_pollEvent
         add esp, 8
         test eax, eax
@@ -448,7 +449,7 @@ main_loop:
 
 start_game:
     ; 這裡可以添加進入音樂選擇頁面的邏輯
-    mov DWORD PTR [currentPage], 2
+    mov DWORD PTR [currentPage], 1
     jmp exit_program
 
 @end:

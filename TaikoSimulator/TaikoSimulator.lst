@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.41.34120.0	    12/12/24 01:08:34
+Microsoft (R) Macro Assembler Version 14.41.34120.0	    12/13/24 00:16:32
 main_page.asm						     Page 1 - 1
 
 
@@ -230,7 +230,7 @@ main_page.asm						     Page 1 - 1
  000000F5 43700000		    opacity dd 043700000r ; 240.0
  000000F9 42480000		    minOpacity dd 042480000r ; 50.0
  000000FD 43700000		    maxOpacity dd 043700000r ; 240.0
- 00000101 BDCCCCCD		    deltaOpacity dd 0bdcccccdr ; -0.01
+ 00000101 BDCCCCCD		    deltaOpacity dd 0bdcccccdr ; -0.1
  00000105 00 00 00 00		    textColor sfColor <>
  00000109 00 00 00 00		    outlineColor sfColor <>
 				    
@@ -557,7 +557,7 @@ main_page.asm						     Page 1 - 1
 				   ; 載入背景
  0000033F  E8 FFFFFCBC		    call load_background
  00000344  85 C0		    test eax, eax
- 00000346  0F 84 000000E6	    jz exit_program
+ 00000346  0F 84 000000E7	    jz exit_program
 				    
 				    ; 播放音樂
  0000034C  E8 FFFFFCE5		    call main_play_music
@@ -575,128 +575,129 @@ main_page.asm						     Page 1 - 1
  0000035F  E8 00000000 E	    call sfRenderWindow_isOpen
  00000364  83 C4 04		    add esp, 4
  00000367  85 C0		    test eax, eax
- 00000369  0F 84 000000C3	    je exit_program
+ 00000369  0F 84 000000C4	    je exit_program
 
  0000036F			    event_loop:
 				        ; 事件處理
  0000036F  8D 35 000000CD R	        lea esi, event
  00000375  56			        push esi
- 00000376  FF 75 08		        push window
- 00000379  E8 00000000 E	        call sfRenderWindow_pollEvent
- 0000037E  83 C4 08		        add esp, 8
- 00000381  85 C0		        test eax, eax
- 00000383  74 21		        je render_window
+ 00000376  8B 45 08		        mov eax, DWORD PTR [window]
+ 00000379  50			        push eax
+ 0000037A  E8 00000000 E	        call sfRenderWindow_pollEvent
+ 0000037F  83 C4 08		        add esp, 8
+ 00000382  85 C0		        test eax, eax
+ 00000384  74 21		        je render_window
 				    
 				        ; 檢查關閉事件
- 00000385  83 3E 00		        cmp dword ptr [esi].sfEvent._type, sfEvtClosed
- 00000388  0F 84 0000009A	        je @end
+ 00000386  83 3E 00		        cmp dword ptr [esi].sfEvent._type, sfEvtClosed
+ 00000389  0F 84 0000009A	        je @end
 				    
 				        ; 檢查滑鼠點擊
- 0000038E  83 3E 09		        cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
- 00000391  0F 84 00000085	        je start_game
+ 0000038F  83 3E 09		        cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
+ 00000392  0F 84 00000085	        je start_game
 				    
 				        ; 檢查鍵盤事件
- 00000397  83 3E 05		        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
- 0000039A  74 02		        je enterPressed
+ 00000398  83 3E 05		        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
+ 0000039B  74 02		        je enterPressed
 
- 0000039C  EB D1		        jmp event_loop
+ 0000039D  EB D0		        jmp event_loop
 
- 0000039E			        enterPressed:
- 0000039E  83 7E 04 3A		            cmp dword ptr [esi+4], sfKeyEnter ; 記憶體中，sfEvtKeyPressed的鍵盤按鍵代碼(58)在偏移4的位置
- 000003A2  74 78		            je start_game
- 000003A4  EB C9		            jmp event_loop
+ 0000039F			        enterPressed:
+ 0000039F  83 7E 04 3A		            cmp dword ptr [esi+4], sfKeyEnter ; 記憶體中，sfEvtKeyPressed的鍵盤按鍵代碼(58)在偏移4的位置
+ 000003A3  74 78		            je start_game
+ 000003A5  EB C8		            jmp event_loop
 				    
- 000003A6			    render_window:
+ 000003A7			    render_window:
 				        ; 更新透明度
- 000003A6  E8 FFFFFED1		        call update_text_opacity
- 000003AB  6A 00		        push 0
- 000003AD  A1 000000A5 R	        mov eax, DWORD PTR [promptText]
- 000003B2  50			        push eax
- 000003B3  8B 4D 08		        mov ecx, DWORD PTR [window]
- 000003B6  51			        push ecx
- 000003B7  E8 00000000 E	        call sfRenderWindow_drawText
- 000003BC  83 C4 0C		        add esp, 12
+ 000003A7  E8 FFFFFED0		        call update_text_opacity
+ 000003AC  6A 00		        push 0
+ 000003AE  A1 000000A5 R	        mov eax, DWORD PTR [promptText]
+ 000003B3  50			        push eax
+ 000003B4  8B 4D 08		        mov ecx, DWORD PTR [window]
+ 000003B7  51			        push ecx
+ 000003B8  E8 00000000 E	        call sfRenderWindow_drawText
+ 000003BD  83 C4 0C		        add esp, 12
 
 				        ; 清除視窗
- 000003BF  FF 35 00000115 R	        push blackColor
- 000003C5  FF 75 08		        push window
- 000003C8  E8 00000000 E	        call sfRenderWindow_clear
- 000003CD  83 C4 08		        add esp, 8
+ 000003C0  FF 35 00000115 R	        push blackColor
+ 000003C6  FF 75 08		        push window
+ 000003C9  E8 00000000 E	        call sfRenderWindow_clear
+ 000003CE  83 C4 08		        add esp, 8
 				    
 				        ; 繪製背景
- 000003D0  6A 00		        push 0
- 000003D2  A1 00000095 R	        mov eax, DWORD PTR [bgSprite]
- 000003D7  50			        push eax
- 000003D8  8B 4D 08		        mov ecx, DWORD PTR [window]
- 000003DB  51			        push ecx
- 000003DC  E8 00000000 E	        call sfRenderWindow_drawSprite
- 000003E1  83 C4 0C		        add esp, 12
+ 000003D1  6A 00		        push 0
+ 000003D3  A1 00000095 R	        mov eax, DWORD PTR [bgSprite]
+ 000003D8  50			        push eax
+ 000003D9  8B 4D 08		        mov ecx, DWORD PTR [window]
+ 000003DC  51			        push ecx
+ 000003DD  E8 00000000 E	        call sfRenderWindow_drawSprite
+ 000003E2  83 C4 0C		        add esp, 12
 
 				        ; 繪製標題文字
- 000003E4  6A 00		        push 0
- 000003E6  A1 000000A1 R	        mov eax, DWORD PTR [titleText]
- 000003EB  50			        push eax
- 000003EC  8B 4D 08		        mov ecx, DWORD PTR [window]
- 000003EF  51			        push ecx
- 000003F0  E8 00000000 E	        call sfRenderWindow_drawText
- 000003F5  83 C4 0C		        add esp, 12
+ 000003E5  6A 00		        push 0
+ 000003E7  A1 000000A1 R	        mov eax, DWORD PTR [titleText]
+ 000003EC  50			        push eax
+ 000003ED  8B 4D 08		        mov ecx, DWORD PTR [window]
+ 000003F0  51			        push ecx
+ 000003F1  E8 00000000 E	        call sfRenderWindow_drawText
+ 000003F6  83 C4 0C		        add esp, 12
 
 				        ; 繪製提示文字
- 000003F8  6A 00		        push 0
- 000003FA  FF 35 000000A5 R	        push DWORD PTR [promptText]
- 00000400  FF 75 08		        push DWORD PTR [window]
- 00000403  E8 00000000 E	        call sfRenderWindow_drawText
- 00000408  83 C4 0C		        add esp, 12
+ 000003F9  6A 00		        push 0
+ 000003FB  FF 35 000000A5 R	        push DWORD PTR [promptText]
+ 00000401  FF 75 08		        push DWORD PTR [window]
+ 00000404  E8 00000000 E	        call sfRenderWindow_drawText
+ 00000409  83 C4 0C		        add esp, 12
 
 				        ; 顯示視窗
- 0000040B  8B 45 08		        mov eax, DWORD PTR [window]
- 0000040E  50			        push eax
- 0000040F  E8 00000000 E	        call sfRenderWindow_display
- 00000414  83 C4 04		        add esp, 4
+ 0000040C  8B 45 08		        mov eax, DWORD PTR [window]
+ 0000040F  50			        push eax
+ 00000410  E8 00000000 E	        call sfRenderWindow_display
+ 00000415  83 C4 04		        add esp, 4
 
- 00000417  E9 FFFFFF3F		        jmp main_loop
+ 00000418  E9 FFFFFF3E		        jmp main_loop
 
- 0000041C			start_game:
+ 0000041D			start_game:
 				    ; 這裡可以添加進入音樂選擇頁面的邏輯
- 0000041C  C7 05 00000000 E	    mov DWORD PTR [currentPage], 2
-	   00000002
- 00000426  EB 0A		    jmp exit_program
+ 0000041D  C7 05 00000000 E	    mov DWORD PTR [currentPage], 1
+	   00000001
+ 00000427  EB 0A		    jmp exit_program
 
- 00000428			@end:
- 00000428  C7 05 00000000 E	    mov DWORD PTR [currentPage], -1
+ 00000429			@end:
+ 00000429  C7 05 00000000 E	    mov DWORD PTR [currentPage], -1
 	   FFFFFFFF
 
- 00000432			exit_program:
+ 00000433			exit_program:
 				    ; 釋放資源
- 00000432  FF 35 00000099 R	    push bgMusic
- 00000438  E8 00000000 E	    call sfMusic_destroy
- 0000043D  83 C4 04		    add esp, 4
+ 00000433  FF 35 00000099 R	    push bgMusic
+ 00000439  E8 00000000 E	    call sfMusic_destroy
+ 0000043E  83 C4 04		    add esp, 4
 
- 00000440  FF 35 00000095 R	    push bgSprite
- 00000446  E8 00000000 E	    call sfSprite_destroy
- 0000044B  83 C4 04		    add esp, 4
+ 00000441  FF 35 00000095 R	    push bgSprite
+ 00000447  E8 00000000 E	    call sfSprite_destroy
+ 0000044C  83 C4 04		    add esp, 4
 
- 0000044E  FF 35 00000091 R	    push bgTexture
- 00000454  E8 00000000 E	    call sfTexture_destroy
- 00000459  83 C4 04		    add esp, 4
+ 0000044F  FF 35 00000091 R	    push bgTexture
+ 00000455  E8 00000000 E	    call sfTexture_destroy
+ 0000045A  83 C4 04		    add esp, 4
 
- 0000045C  FF 35 000000A1 R	    push titleText
- 00000462  E8 00000000 E	    call sfText_destroy
- 00000467  83 C4 04		    add esp, 4
+ 0000045D  FF 35 000000A1 R	    push titleText
+ 00000463  E8 00000000 E	    call sfText_destroy
+ 00000468  83 C4 04		    add esp, 4
 
- 0000046A  FF 35 000000A5 R	    push promptText
- 00000470  E8 00000000 E	    call sfText_destroy
- 00000475  83 C4 04		    add esp, 4
+ 0000046B  FF 35 000000A5 R	    push promptText
+ 00000471  E8 00000000 E	    call sfText_destroy
+ 00000476  83 C4 04		    add esp, 4
 
- 00000478  FF 35 0000009D R	    push font
- 0000047E  E8 00000000 E	    call sfFont_destroy
- 00000483  83 C4 04		    add esp, 4
+ 00000479  FF 35 0000009D R	    push font
+ 0000047F  E8 00000000 E	    call sfFont_destroy
+ 00000484  83 C4 04		    add esp, 4
 
 				    ret
- 00000488			main_page_proc ENDP
+ 00000489			main_page_proc ENDP
 
 				END main_page_proc
-Microsoft (R) Macro Assembler Version 14.41.34120.0	    12/12/24 01:08:34
+Microsoft (R) Macro Assembler Version 14.41.34120.0	    12/13/24 00:16:32
 main_page.asm						     Symbols 2 - 1
 
 
@@ -750,7 +751,7 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 _DATA  . . . . . . . . . . . . .	32 Bit	 00000129 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 00000488 Para	  Public  'CODE'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000489 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -758,15 +759,15 @@ Procedures, parameters, and locals:
                 N a m e                 Type     Value    Attr
 
 load_background  . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000036 Public C
-main_page_proc . . . . . . . . .	P Near	 0000033C _TEXT	Length= 0000014C Public C
+main_page_proc . . . . . . . . .	P Near	 0000033C _TEXT	Length= 0000014D Public C
   window . . . . . . . . . . . .	DWord	 bp + 00000008
   main_loop  . . . . . . . . . .	L Near	 0000035B _TEXT	
   event_loop . . . . . . . . . .	L Near	 0000036F _TEXT	
-  enterPressed . . . . . . . . .	L Near	 0000039E _TEXT	
-  render_window  . . . . . . . .	L Near	 000003A6 _TEXT	
-  start_game . . . . . . . . . .	L Near	 0000041C _TEXT	
-  @end . . . . . . . . . . . . .	L Near	 00000428 _TEXT	
-  exit_program . . . . . . . . .	L Near	 00000432 _TEXT	
+  enterPressed . . . . . . . . .	L Near	 0000039F _TEXT	
+  render_window  . . . . . . . .	L Near	 000003A7 _TEXT	
+  start_game . . . . . . . . . .	L Near	 0000041D _TEXT	
+  @end . . . . . . . . . . . . .	L Near	 00000429 _TEXT	
+  exit_program . . . . . . . . .	L Near	 00000433 _TEXT	
 main_play_music  . . . . . . . .	P Near	 00000036 _TEXT	Length= 0000001C Public C
 setup_prompt_text  . . . . . . .	P Near	 0000016C _TEXT	Length= 00000110 Public C
 setup_title_text . . . . . . . .	P Near	 00000052 _TEXT	Length= 0000011A Public C
