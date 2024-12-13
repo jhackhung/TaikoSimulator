@@ -91,12 +91,13 @@ call_end_game_page:
 
 end_program:
 	; µ{¦¡µ²§ô
+    push window
 	call sfRenderWindow_close
+    add esp, 4
     push window
 	call sfRenderWindow_destroy
     add esp, 4
-	ret
-
+    
 main ENDP
 
 END main

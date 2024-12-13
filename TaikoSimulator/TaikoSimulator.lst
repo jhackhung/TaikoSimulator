@@ -169,6 +169,15 @@ select_music_page.asm					     Page 1 - 1
 			      C EXTERN sfRectangleShape_setOutlineColor: PROC
 			      C 
 
+				EXTERN sfRectangleShape_create: PROC
+				EXTERN sfRectangleShape_setPosition: PROC
+				EXTERN sfRectangleShape_setSize: PROC
+				EXTERN sfRectangleShape_setFillColor: PROC
+				EXTERN sfRectangleShape_setOutlineThickness: PROC
+				EXTERN sfRenderWindow_drawRectangleShape: PROC
+				EXTERN sfRectangleShape_destroy: PROC
+				EXTERN sfRectangleShape_setOutlineColor: PROC
+
 				extern currentPage: DWORD
 
  = 00000000			BUTTON_STATE_NORMAL equ 0
@@ -244,7 +253,9 @@ select_music_page.asm					     Page 1 - 1
 
  000000DF 00000000		    song1Bounds sfFloatRect <>
 	   00000000
+ 00000102 00000000		    button2_shape Button <>
 	   00000000
+ 0000010A 00000000		    button3_shape Button <>
 	   00000000
  000000EF 00000000		    song2Bounds sfFloatRect <>
 	   00000000
@@ -323,11 +334,9 @@ select_music_page.asm					     Page 1 - 1
  0000000C  83 C4 08		    add esp, 8
  0000000F  A3 000000B3 R	    mov bgTexture, eax
 				    
-				    ; 創建背景精靈
  00000014  E8 00000000 E	    call sfSprite_create
  00000019  A3 000000B7 R	    mov DWORD PTR [bgSprite], eax
 				    
-				    ; 設定紋理
  0000001E  6A 01		    push 1
  00000020  A1 000000B3 R	    mov eax, DWORD PTR [bgTexture]
  00000025  50			    push eax

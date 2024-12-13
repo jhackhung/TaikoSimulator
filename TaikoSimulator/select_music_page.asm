@@ -925,7 +925,7 @@ select_music_page PROC window:DWORD
     mov DWORD PTR [currentPage], -1
 
 @exit_program:
-    ;call cleanup
+    call cleanup
     xor eax, eax
     ret
 
