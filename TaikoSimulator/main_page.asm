@@ -7,9 +7,9 @@ extern currentPage: DWORD
 
 .data
     ; 檔案路徑
-    musicPath db "assets/main/v_title.ogg", 0
-    picPath db "assets/main/taiko_main.jpg", 0
-    fontPath db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
+    musicPath db "C:\Users\User\source\repos\TaikoSimulator\TaikoSimulator\assets\main\v_title.ogg", 0
+    picPath db "C:\Users\User\source\repos\TaikoSimulator\TaikoSimulator\assets\main\taiko_main.jpg", 0
+    fontPath db "C:\Users\User\source\repos\TaikoSimulator\TaikoSimulator\assets\main\Taiko_No_Tatsujin_Official_Font.ttf", 0
     
     ; 視窗和遊戲標題
     window_title db "Taiko Simulator", 0
