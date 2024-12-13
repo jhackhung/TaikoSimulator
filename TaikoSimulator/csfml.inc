@@ -6,7 +6,6 @@ includelib csfml-graphics.lib
 includelib csfml-system.lib
 includelib csfml-window.lib
 
-
 ; sfBool 定義
 sfFalse     equ 0
 sfTrue      equ 1
@@ -34,6 +33,9 @@ sfMouseMiddle equ 2
 
 ; sfKey 定義
 sfKeyEnter    equ 58
+sfKeyA        equ 0
+sfKeyS        equ 18
+sfKeyD        equ 3
 
 ; 視窗風格定義
 sfNone       equ 0
@@ -87,12 +89,12 @@ key STRUCT
     system DWORD ?
 key ENDS
 
-; 事件結構體
 sfEvent STRUCT
-    _type DWORD ?
-    _size DWORD ?
-    mouse mouseButton <>
-    _key key <>
+    _type DWORD ?                
+    _size DWORD ?                
+    mouse mouseButton <>       
+    _key key <>                 
+    mouseMove sfVector2i <>     
 sfEvent ENDS
 
 ; 函數原型 - 視窗相關
@@ -120,6 +122,7 @@ EXTERN sfMusic_createFromFile:PROC
 EXTERN sfMusic_destroy:PROC
 EXTERN sfMusic_play:PROC
 EXTERN sfMusic_setLoop:PROC
+EXTERN sfMusic_stop: PROC
 
 ; 函數原型 - 文字相關
 EXTERN sfFont_createFromFile:PROC
@@ -139,3 +142,13 @@ EXTERN sfText_setPosition:PROC
 ; 函數原型 - 顏色相關
 EXTERN sfColor_fromRGB:PROC
 EXTERN sfColor_fromRGBA:PROC
+
+; 函數原型 - 矩形相關
+EXTERN sfRectangleShape_create: PROC
+EXTERN sfRectangleShape_setPosition: PROC
+EXTERN sfRectangleShape_setSize: PROC
+EXTERN sfRectangleShape_setFillColor: PROC
+EXTERN sfRectangleShape_setOutlineThickness: PROC
+EXTERN sfRenderWindow_drawRectangleShape: PROC
+EXTERN sfRectangleShape_destroy: PROC
+EXTERN sfRectangleShape_setOutlineColor: PROC
