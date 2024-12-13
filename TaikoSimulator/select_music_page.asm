@@ -24,8 +24,8 @@ Button ENDS
 
 .data
     ; 檔案路徑
-    bg_path db "assets/main/taiko_main.jpg", 0
-    font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
+    bg_path db "C:\Users\User\source\repos\TaikoSimulator\TaikoSimulator\assets\main\taiko_main.jpg", 0
+    font_path db "C:\Users\User\source\repos\TaikoSimulator\TaikoSimulator\assets\main\Taiko_No_Tatsujin_Official_Font.ttf", 0
     
     ; 視窗標題
     window_title db "Song Selection", 0
@@ -340,7 +340,7 @@ select_music_page PROC window:DWORD
     mov DWORD PTR [currentPage], -1
 
 @exit_program:
-    ;call cleanup
+    call cleanup
     xor eax, eax
     ret
 
