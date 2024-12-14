@@ -14,20 +14,20 @@ Button STRUCT
 Button ENDS
 
 .data
-    ; ÀÉ®×¸ô®|
+    ; æª”æ¡ˆè·¯å¾‘
     music1_path db "assets/main/song1.ogg", 0
     music2_path db "assets/main/song2.ogg", 0
     music3_path db "assets/main/song3.ogg", 0
     bg_path db "assets/main/song_select_bg.jpg", 0
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
    
-    ; ´£¥Ü¤å¦r
+    ; æç¤ºæ–‡å­—
     song1_string db "Song 1", 0
     song2_string  db "Song 2", 0
     song3_string  db "Song 3", 0
     instruction_string db "Introduction", 0
     
-    ; CSFMLª«¥ó
+    ; CSFMLç‰©ä»¶
     ; window dd 0
     bgTexture dd 0
     bgSprite dd 0
@@ -40,7 +40,7 @@ Button ENDS
     instructionText dd 0
 
 
-    KeyA_state dd 0 ; °lÂÜ«öÁä¬O§_«ö¤U
+    KeyA_state dd 0 ; è¿½è¹¤æŒ‰éµæ˜¯å¦æŒ‰ä¸‹
     KeyS_state dd 0
     KeyD_state dd 0
 
@@ -49,26 +49,26 @@ Button ENDS
     song3Bounds sfFloatRect <>
     instructionBounds sfFloatRect <>
 
-    ; µøµ¡³]©w
+    ; è¦–çª—è¨­å®š
     ;window_videoMode sfVideoMode <1280, 720, 32>
     window_realWidth dd 044a00000r ; 1280.0
-    ; ¨Æ¥óµ²ºc
+    ; äº‹ä»¶çµæ§‹
     event sfEvent <>
 
-    ; ÃC¦â±`¼Æ
+    ; é¡è‰²å¸¸æ•¸
     gray_color sfColor <169, 169, 169, 255>
     dark_gray_color sfColor <105, 105, 105, 255>
     light_gray_color sfColor <210, 210, 210, 255>
     beige_color sfColor <255, 239, 198, 255>
     black_color sfColor <0, 0, 0, 255>
 
-    ; «ö¶sª«¥ó
+    ; æŒ‰éˆ•ç‰©ä»¶
     button1_shape Button <>
     button2_shape Button <>
     button3_shape Button <>
     instruction_shape Button <>
         
-    ; ±`¼Æ
+    ; å¸¸æ•¸
     button_x REAL4 400.0
     button1_y REAL4 150.0
     button2_y REAL4 250.0
@@ -89,20 +89,20 @@ Button ENDS
 
 .code
 
-; ¸ü¤J­I´º
+; è¼‰å…¥èƒŒæ™¯
 @load_background PROC
-    ; ³Ğ«Ø­I´º¯¾²z
+    ; å‰µå»ºèƒŒæ™¯ç´‹ç†
     push 0
     push offset bg_path
     call sfTexture_createFromFile
     add esp, 8
     mov bgTexture, eax
     
-    ; ³Ğ«Ø­I´ººëÆF
+    ; å‰µå»ºèƒŒæ™¯ç²¾éˆ
     call sfSprite_create
     mov DWORD PTR [bgSprite], eax
     
-    ; ³]©w¯¾²z
+    ; è¨­å®šç´‹ç†
     push 1
     mov eax, DWORD PTR [bgTexture]
     push eax
@@ -141,7 +141,7 @@ play_music PROC
 		ret
 play_music ENDP
 
-; ³]©wSong1¤å¦r
+; è¨­å®šSong1æ–‡å­—
 setup_song1_text PROC
     ; Create font
     push offset font_path
@@ -222,7 +222,7 @@ setup_song1_text PROC
     ret
 setup_song1_text ENDP
 
-; ³]©wSong2¤å¦r
+; è¨­å®šSong2æ–‡å­—
 setup_song2_text PROC
     ; Create font
     push offset font_path
@@ -303,7 +303,7 @@ setup_song2_text PROC
     ret
 setup_song2_text ENDP
 
-; ³]©wSong3¤å¦r
+; è¨­å®šSong3æ–‡å­—
 setup_song3_text PROC
     ; Create font
     push offset font_path
@@ -384,7 +384,7 @@ setup_song3_text PROC
     ret
 setup_song3_text ENDP
 
-; ³]©winstruction¤å¦r
+; è¨­å®šinstructionæ–‡å­—
 setup_instruction_text PROC
     ; Create font
     push offset font_path
@@ -465,43 +465,43 @@ setup_instruction_text PROC
     ret
 setup_instruction_text ENDP
 
-; ³Ğ«Ø«ö¶s
+; å‰µå»ºæŒ‰éˆ•
 create_button PROC
     
     push ebp
     mov ebp, esp
 
-    ; ©I¥s¨ç¼Æ³Ğ«Ø¯x§Î
+    ; å‘¼å«å‡½æ•¸å‰µå»ºçŸ©å½¢
     call sfRectangleShape_create
-    mov esi, eax  ; Àx¦s¯x§Îª«¥ó
+    mov esi, eax  ; å„²å­˜çŸ©å½¢ç‰©ä»¶
 
-    ; ³Ğ«Ø¦ì¸m¦V¶q !µ{¦¡¦ì¸m¦s¦bebp+4
-    push dword ptr [ebp+12] ; y ®y¼Ğ
-    push dword ptr [ebp+8]  ; x ®y¼Ğ
+    ; å‰µå»ºä½ç½®å‘é‡ !ç¨‹å¼ä½ç½®å­˜åœ¨ebp+4
+    push dword ptr [ebp+12] ; y åº§æ¨™
+    push dword ptr [ebp+8]  ; x åº§æ¨™
     push esi
     call sfRectangleShape_setPosition
     add esp, 12
 
-    ; ³]©w¤j¤p
-    push dword ptr [ebp+20] ; °ª«×
-    push dword ptr [ebp+16] ; ¼e«×
+    ; è¨­å®šå¤§å°
+    push dword ptr [ebp+20] ; é«˜åº¦
+    push dword ptr [ebp+16] ; å¯¬åº¦
     push esi
     call sfRectangleShape_setSize
     add esp, 12
 
-    ; ³]©w¶ñ¥RÃC¦â
+    ; è¨­å®šå¡«å……é¡è‰²
     push gray_color
     push esi
     call sfRectangleShape_setFillColor
     add esp, 8
 
-    ; ³]©wÃä®ØÃC¦â
+    ; è¨­å®šé‚Šæ¡†é¡è‰²
     push dark_gray_color
     push esi
     call sfRectangleShape_setOutlineColor
     add esp, 8
 
-    ; ³]©wÃä®Ø«p«×  
+    ; è¨­å®šé‚Šæ¡†åšåº¦  
     sub esp, 4
     movss xmm0, dword ptr [outline_thickness]
     movss dword ptr [esp], xmm0
@@ -509,16 +509,16 @@ create_button PROC
     call sfRectangleShape_setOutlineThickness
     add esp, 8
 
-    ; ªğ¦^«ö¶sª«¥ó
+    ; è¿”å›æŒ‰éˆ•ç‰©ä»¶
     mov eax, esi
 
     pop ebp
     ret
 create_button ENDP
 
-; ªì©l¤Æ«ö¶s
+; åˆå§‹åŒ–æŒ‰éˆ•
 init_buttons PROC
-    ; ªì©l¤Æ«ö¶s1
+    ; åˆå§‹åŒ–æŒ‰éˆ•1
     push ecx
     movss xmm0, dword ptr [button_height]
     movss dword ptr [esp], xmm0
@@ -540,7 +540,7 @@ init_buttons PROC
     mov dword ptr [button1_shape], eax
     mov dword ptr [button1_shape.state], BUTTON_STATE_NORMAL
 
-    ; ªì©l¤Æ«ö¶s2
+    ; åˆå§‹åŒ–æŒ‰éˆ•2
     push ecx
     movss xmm0, dword ptr [button_height]
     movss dword ptr [esp], xmm0
@@ -562,7 +562,7 @@ init_buttons PROC
     mov dword ptr [button2_shape], eax
     mov dword ptr [button2_shape.state], BUTTON_STATE_NORMAL
 
-    ; ªì©l¤Æ«ö¶s3
+    ; åˆå§‹åŒ–æŒ‰éˆ•3
     push ecx
     movss xmm0, dword ptr [button_height]
     movss dword ptr [esp], xmm0
@@ -584,7 +584,7 @@ init_buttons PROC
     mov dword ptr [button3_shape], eax
     mov dword ptr [button3_shape.state], BUTTON_STATE_NORMAL
 
-    ; ªì©l¤Æ¤¶²Ğ®Ø
+    ; åˆå§‹åŒ–ä»‹ç´¹æ¡†
     push ecx
     movss xmm0, dword ptr [instruction_height]
     movss dword ptr [esp], xmm0
@@ -606,13 +606,13 @@ init_buttons PROC
     mov dword ptr [instruction_shape], eax
     mov dword ptr [instruction_shape.state], BUTTON_STATE_NORMAL
 
-    ; ­×§ï©³³¡ªø¤è§ÎÃC¦â©MÃä®Ø
-    push beige_color  ; ÃZ¶À¦â
+    ; ä¿®æ”¹åº•éƒ¨é•·æ–¹å½¢é¡è‰²å’Œé‚Šæ¡†
+    push beige_color  ; éµé»ƒè‰²
     push dword ptr [instruction_shape]
     call sfRectangleShape_setFillColor
     add esp, 8
 
-    push black_color  ; ¶Â¦âÃä®Ø
+    push black_color  ; é»‘è‰²é‚Šæ¡†
     push dword ptr [instruction_shape]
     call sfRectangleShape_setOutlineColor
     add esp, 8
@@ -620,7 +620,7 @@ init_buttons PROC
     ret
 init_buttons ENDP
 
-; ÄÀ©ñ¸ê·½
+; é‡‹æ”¾è³‡æº
 cleanup PROC
     ; push window
     ; call sfRenderWindow_destroy
@@ -678,17 +678,17 @@ cleanup ENDP
 
 select_music_page PROC window:DWORD
 
-   ; ¸ü¤J­I´º
+   ; è¼‰å…¥èƒŒæ™¯
     call @load_background
     test eax, eax
     jz @exit_program
     
     mov bgMusic, 0
 
-    ; ³]©w«ö¶s
+    ; è¨­å®šæŒ‰éˆ•
     call init_buttons
 
-    ; ³]©w´£¥Ü¤å¦r
+    ; è¨­å®šæç¤ºæ–‡å­—
     call setup_song1_text
     call setup_song2_text
     call setup_song3_text
@@ -704,7 +704,7 @@ select_music_page PROC window:DWORD
     je @exit_program
 
     @event_loop:
-        ; ¨Æ¥ó³B²z
+        ; äº‹ä»¶è™•ç†
         lea esi, event
         push esi
         mov eax, window
@@ -714,15 +714,15 @@ select_music_page PROC window:DWORD
         test eax, eax
         je @render_window
     
-        ; ÀË¬dÃö³¬¨Æ¥ó
+        ; æª¢æŸ¥é—œé–‰äº‹ä»¶
         cmp dword ptr [esi].sfEvent._type, sfEvtClosed
         je @end
 
-        ; ÀË¬d·Æ¹«ÂIÀ»
+        ; æª¢æŸ¥æ»‘é¼ é»æ“Š
         cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
         je @render_window
     
-        ; ÀË¬dÁä½L¨Æ¥ó
+        ; æª¢æŸ¥éµç›¤äº‹ä»¶
         cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
         je @check_key_press
 
@@ -744,9 +744,10 @@ select_music_page PROC window:DWORD
             jmp @event_loop
 
 @key_1_pressed:
-    mov dword ptr [KeyA_state], 1 ; ³]©wª¬ºA¤w«ö¤U 
+    mov dword ptr [KeyA_state], 1 ; è¨­å®šç‹€æ…‹å·²æŒ‰ä¸‹ 
     mov dword ptr [KeyS_state], 0
     mov dword ptr [KeyD_state], 0
+
     push offset music1_path
     call play_music
     add esp, 4
@@ -768,9 +769,10 @@ select_music_page PROC window:DWORD
     jmp @event_loop
 
 @key_2_pressed:
-    mov dword ptr [KeyS_state], 1 ; ³]©wª¬ºA¤w«ö¤U
+    mov dword ptr [KeyS_state], 1 ; è¨­å®šç‹€æ…‹å·²æŒ‰ä¸‹
     mov dword ptr [KeyA_state], 0
     mov dword ptr [KeyD_state], 0
+
     push offset music2_path
     call play_music
     add esp, 4
@@ -792,9 +794,10 @@ select_music_page PROC window:DWORD
     jmp @event_loop
 
 @key_3_pressed:
-    mov dword ptr [KeyD_state], 1 ; ³]©wª¬ºA¤w«ö¤U
+    mov dword ptr [KeyD_state], 1 ; è¨­å®šç‹€æ…‹å·²æŒ‰ä¸‹
     mov dword ptr [KeyA_state], 0
     mov dword ptr [KeyS_state], 0
+
     push offset music3_path
     call play_music
     add esp, 4
@@ -840,13 +843,13 @@ select_music_page PROC window:DWORD
     jmp @exit_program
     
 @render_window: 
-    ; ²M°£µøµ¡
+    ; æ¸…é™¤è¦–çª—
     push black_color
     push window
     call sfRenderWindow_clear
     add esp, 8
     
-    ; Ã¸»s­I´º
+    ; ç¹ªè£½èƒŒæ™¯
     push 0
     mov eax, DWORD PTR [bgSprite]
     push eax
@@ -855,7 +858,7 @@ select_music_page PROC window:DWORD
     call sfRenderWindow_drawSprite
     add esp, 12
 
-    ; Ã¸»s«ö¶s
+    ; ç¹ªè£½æŒ‰éˆ•
     push 0
     mov eax, DWORD PTR [button1_shape]
     push eax
@@ -888,35 +891,35 @@ select_music_page PROC window:DWORD
     call sfRenderWindow_drawRectangleShape
     add esp, 12
 
-    ; Ã¸»ssong1
+    ; ç¹ªè£½song1
     push 0
     push DWORD PTR [song1Text]
     push DWORD PTR [window]
     call sfRenderWindow_drawText
     add esp, 12
 
-    ; Ã¸»ssong2
+    ; ç¹ªè£½song2
     push 0
     push DWORD PTR [song2Text]
     push DWORD PTR [window]
     call sfRenderWindow_drawText
     add esp, 12
 
-    ; Ã¸»ssong3
+    ; ç¹ªè£½song3
     push 0
     push DWORD PTR [song3Text]
     push DWORD PTR [window]
     call sfRenderWindow_drawText
     add esp, 12
 
-    ; Ã¸»sinstruction
+    ; ç¹ªè£½instruction
     push 0
     push DWORD PTR [instructionText]
     push DWORD PTR [window]
     call sfRenderWindow_drawText
     add esp, 12
 
-    ; Åã¥Üµøµ¡
+    ; é¡¯ç¤ºè¦–çª—
     mov eax, DWORD PTR [window]
     push eax
     call sfRenderWindow_display

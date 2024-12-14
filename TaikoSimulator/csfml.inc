@@ -123,6 +123,7 @@ EXTERN sfMusic_destroy:PROC
 EXTERN sfMusic_play:PROC
 EXTERN sfMusic_setLoop:PROC
 EXTERN sfMusic_stop: PROC
+EXTERN sfMusic_getStatus: PROC
 
 ; 函數原型 - 文字相關
 EXTERN sfFont_createFromFile:PROC
