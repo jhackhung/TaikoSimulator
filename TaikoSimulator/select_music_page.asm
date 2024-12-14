@@ -113,44 +113,33 @@ Button ENDS
     ret
 @load_background ENDP
 
-; 設定音樂1
-play_music1 PROC
-    push offset music1_path
-    call sfMusic_createFromFile
-    add esp, 4 
-    mov bgMusic, eax
 
-    push eax
-    call sfMusic_play
+play_music PROC
+    mov eax, bgMusic
+    cmp eax, 0
+    je @create_music
+    push dword ptr [bgMusic]
+    call sfMusic_getStatus
     add esp, 4
-    ret
-play_music1 ENDP
+    cmp eax, 2
+    jne @create_music
 
-; 設定音樂2
-play_music2 PROC
-    push offset music2_path
-    call sfMusic_createFromFile
-    add esp, 4 
-    mov bgMusic, eax
+    @stop_music:
+	   push bgMusic
+	   call sfMusic_stop
+	   add esp, 4
 
-    push eax
-    call sfMusic_play
-    add esp, 4
-    ret
-play_music2 ENDP
+    @create_music:
+		push [esp+4]
+		call sfMusic_createFromFile
+		add esp, 4 
+		mov bgMusic, eax
 
-; 設定音樂3
-play_music3 PROC
-    push offset music3_path
-    call sfMusic_createFromFile
-    add esp, 4 
-    mov bgMusic, eax
-
-    push eax
-    call sfMusic_play
-    add esp, 4
-    ret
-play_music3 ENDP
+		push eax
+		call sfMusic_play
+		add esp, 4
+		ret
+play_music ENDP
 
 ; 設定Song1文字
 setup_song1_text PROC
@@ -693,6 +682,8 @@ select_music_page PROC window:DWORD
     call @load_background
     test eax, eax
     jz @exit_program
+    
+    mov bgMusic, 0
 
     ; 設定按鈕
     call init_buttons
@@ -754,7 +745,9 @@ select_music_page PROC window:DWORD
 
 @key_1_pressed:
     mov dword ptr [KeyA_state], 1 ; 設定狀態已按下 
-    call play_music1
+    push offset music1_path
+    call play_music
+    add esp, 4
 
     push light_gray_color
     push DWORD PTR [button1_shape]
@@ -774,7 +767,9 @@ select_music_page PROC window:DWORD
 
 @key_2_pressed:
     mov dword ptr [KeyS_state], 1 ; 設定狀態已按下
-    call play_music2
+    push offset music2_path
+    call play_music
+    add esp, 4
 
     push light_gray_color
     push DWORD PTR [button2_shape]
@@ -794,7 +789,9 @@ select_music_page PROC window:DWORD
 
 @key_3_pressed:
     mov dword ptr [KeyD_state], 1 ; 設定狀態已按下
-    call play_music3
+    push offset music3_path
+    call play_music
+    add esp, 4
 
     push light_gray_color
     push DWORD PTR [button3_shape]
