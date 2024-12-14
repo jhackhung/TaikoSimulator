@@ -14,8 +14,8 @@ Button STRUCT
 Button ENDS
 
 .data
-    ; ÀÉ®×¸ô®|
-    music1_path db "assets/main/song1.ogg", 0
+    ;music1_path db "assets/main/song1.ogg", 0
+    music1_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
     music2_path db "assets/main/song2.ogg", 0
     music3_path db "assets/main/song3.ogg", 0
     bg_path db "assets/main/song_select_bg.jpg", 0
@@ -822,15 +822,18 @@ select_music_page PROC window:DWORD
     jne @event_loop              
 
 @keyA_enter:
-    mov DWORD PTR [currentPage], 0
+    mov DWORD PTR [currentPage], 2
+    mov ebx, offset music1_path
     jmp @exit_program
 
 @keyS_enter:
-    mov DWORD PTR [currentPage], 0
+    mov DWORD PTR [currentPage], 2
+    mov ebx, offset music2_path
     jmp @exit_program
 
 @keyD_enter:
-    mov DWORD PTR [currentPage], 0
+    mov DWORD PTR [currentPage], 2
+    mov ebx, offset music3_path
     jmp @exit_program
     
 @render_window: 
