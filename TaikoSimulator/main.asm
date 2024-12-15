@@ -63,7 +63,7 @@ game_loop:
     je call_end_game_page     ; 如果是 2，call end_game_page for testing starting game
 
     cmp currentPage, 3
-    je call_end_game_page     ; 如果是 3，呼叫 end_game_page
+    je call_main_game_page     ; 如果是 3，呼叫 end_game_page
     
     ; 可以添加其他頁面的處理分支
     ; cmp currentPage, 1
@@ -93,7 +93,6 @@ call_end_game_page:
     jmp game_loop
 
  call_main_game_page:
-    ;push dword ptr [playing_music]
 	push DWORD PTR [window]
 	call main_game_page
 	add esp, 4

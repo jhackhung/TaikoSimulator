@@ -4,8 +4,8 @@
 include csfml.inc
 
 extern currentPage: DWORD
-extern selected_music_path: DWORD
-extern selected_beatmap1_path: DWORD
+;extern selected_music_path: DWORD
+;extern selected_beatmap1_path: DWORD
 
 .data
     ; 判定窗口 (以毫秒計)
@@ -58,14 +58,14 @@ extern selected_beatmap1_path: DWORD
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
     ; 檔案路徑
-    ;musicPath db "assets\main\v_title.ogg", 0
+    musicPath db "assets/main/song1.ogg", 0
     bgPath db "assets\main\game_bg.jpg", 0
     fontPath db "assets\main\Taiko_No_Tatsujin_Official_Font.ttf", 0
 
 .code
 
 ; 載入背景
-load_background PROC
+load_bg PROC
     ; 創建背景紋理
     push 0
     push offset bgPath
@@ -86,10 +86,10 @@ load_background PROC
     call sfSprite_setTexture
     add esp, 12
     ret
-load_background ENDP
+load_bg ENDP
 
 game_play_music PROC
-    push offset selected_music_path
+    push offset musicPath
     call sfMusic_createFromFile
     add esp, 4 
     mov bgMusic, eax
@@ -99,6 +99,58 @@ game_play_music PROC
     add esp, 4
     ret
 game_play_music ENDP
+
+check_notes PROC
+    ; 取得當前音符的時間並計算與當前歌曲時間的差距
+    mov esi, OFFSET noteTimings
+    mov eax, currentNoteIndex
+    mov ebx, DWORD PTR [esi + eax * 4]
+    sub ebx, currentSongTime
+
+    ; 判斷是否符合 "Great" 的窗口
+    cmp ebx, hitWindowGreat
+    jle handle_great
+    ; 判斷是否符合 "Good" 的窗口
+    cmp ebx, hitWindowGood
+    jle handle_good
+    ; 如果超過 "Miss" 窗口，則忽略該音符
+    cmp ebx, hitWindowMiss
+    jg skip_note
+
+handle_great:
+    ; 增加 "Great" 計數和分數，更新最大連擊
+    inc greatCounter
+    add scoreCounter, 300
+    inc comboCounter
+    mov eax, comboCounter
+    cmp eax, maxCombo
+    jle skip_max_combo
+    mov eax, maxCombo
+    mov eax, comboCounter
+skip_max_combo:
+;;    call update_score_text
+    inc currentNoteIndex
+    ret
+
+handle_good:
+    ; 增加 "Good" 計數和分數
+    inc goodCounter
+    add scoreCounter, 100
+    inc comboCounter
+;;    call update_score_text
+    inc currentNoteIndex
+    ret
+
+skip_note:
+    ; 如果音符已超過 "Miss" 窗口
+    cmp ebx, 0
+;;    jg RenderWindow
+    inc missCounter
+    mov comboCounter, 0
+;;    call update_score_text
+    inc currentNoteIndex
+    ret
+check_notes ENDP
 
 main_game_page PROC window:DWORD
     ; 創建視窗
@@ -110,13 +162,13 @@ main_game_page PROC window:DWORD
     ;test eax, eax
     ;jz ExitGame
 
-    call load_background
+    call load_bg
     test eax, eax
     jz ExitGame
 
     ; 加載背景與音符精靈
     ;call load_background
-    call setup_notes
+;;    call setup_notes
 
     ; 初始化分數與文字顯示
     ;call setup_text
@@ -179,73 +231,20 @@ GameLoop:
 
 RenderWindow:
     ; 更新並渲染畫面
-    call render_game_window
+;;    call render_game_window
 
     ; 檢查當前音符的判定
     call check_notes
     jmp GameLoop
 
 handle_key_input:
-    cmp dword ptr [esi+4], sfKeySpace
+;;    cmp dword ptr [esi+4], sfKeySpace
     je check_notes
     jmp GameLoop
 
-check_notes PROC
-    ; 取得當前音符的時間並計算與當前歌曲時間的差距
-    mov esi, OFFSET noteTimings
-    mov eax, currentNoteIndex
-    mov ebx, DWORD PTR [esi + eax * 4]
-    sub ebx, currentSongTime
-
-    ; 判斷是否符合 "Great" 的窗口
-    cmp ebx, hitWindowGreat
-    jle handle_great
-    ; 判斷是否符合 "Good" 的窗口
-    cmp ebx, hitWindowGood
-    jle handle_good
-    ; 如果超過 "Miss" 窗口，則忽略該音符
-    cmp ebx, hitWindowMiss
-    jg skip_note
-
-handle_great:
-    ; 增加 "Great" 計數和分數，更新最大連擊
-    inc greatCounter
-    add scoreCounter, 300
-    inc comboCounter
-    mov eax, comboCounter
-    cmp eax, maxCombo
-    jle skip_max_combo
-    mov eax, maxCombo
-    mov eax, comboCounter
-skip_max_combo:
-    call update_score_text
-    inc currentNoteIndex
-    ret
-
-handle_good:
-    ; 增加 "Good" 計數和分數
-    inc goodCounter
-    add scoreCounter, 100
-    inc comboCounter
-    call update_score_text
-    inc currentNoteIndex
-    ret
-
-skip_note:
-    ; 如果音符已超過 "Miss" 窗口
-    cmp ebx, 0
-    jg RenderWindow
-    inc missCounter
-    mov comboCounter, 0
-    call update_score_text
-    inc currentNoteIndex
-    ret
-
-check_notes ENDP
-
 EndGame:
     ; 遊戲結束時顯示最終結果
-    call display_results
+;;    call display_results
     mov DWORD PTR [currentPage], -1
     ret
 
