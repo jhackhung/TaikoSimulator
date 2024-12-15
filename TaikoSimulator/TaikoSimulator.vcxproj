@@ -72,6 +72,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LibraryPath>"C:\Users\ASUS\source\repos\TaikoSimulator\Debug";$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -82,10 +85,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir);C:\Users\User\source\repos\TaikoSimulator\Debug\;%(AdditionalLibraryDirectories);C:\Irvine</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Irvine32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);csfml-graphics.lib
-;csfml-window.lib
-;csfml-system.lib;csfml-audio.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir);C:\Users\User\source\repos\TaikoSimulator\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);csfml-graphics.lib;csfml-window.lib;csfml-system.lib;csfml-audio.lib</AdditionalDependencies>
       <GenerateMapFile>true</GenerateMapFile>
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
@@ -134,7 +135,11 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>csfml-audio.lib;csfml-graphics.lib;csfml-network.lib;csfml-system.lib;csfml-window.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy/y $(SolutionDir)TaikoSimulator\dill\* $(OutDir)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -155,6 +160,7 @@
   <ItemGroup>
     <MASM Include="end_game_page.asm" />
     <MASM Include="main.asm" />
+    <MASM Include="main_game_page.asm" />
     <MASM Include="main_page.asm" />
     <MASM Include="select_music_page.asm" />
   </ItemGroup>

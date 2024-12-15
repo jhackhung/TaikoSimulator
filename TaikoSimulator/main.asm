@@ -8,6 +8,7 @@ include csfml.inc
 extern main_page_proc: PROC
 extern end_game_page: PROC
 extern select_music_page: PROC
+extern main_game_page: PROC
 
 public currentPage
 
@@ -57,7 +58,10 @@ game_loop:
     je call_select_music_page    ; 如果是 1，呼叫 select_music_page
 
     cmp currentPage, 2
-    je call_end_game_page     ; 如果是 2，呼叫 end_game_page
+    je call_main_game_page     ; 如果是 2，呼叫 main_game_page
+
+    cmp currentPage, 3
+    je call_end_game_page     ; 如果是 3，呼叫 end_game_page
     
     ; 可以添加其他頁面的處理分支
     ; cmp currentPage, 1
@@ -75,6 +79,12 @@ call_main_page:
 call_select_music_page:
 	push DWORD PTR [window]
 	call select_music_page
+	add esp, 4
+	jmp game_loop
+
+call_main_game_page:
+	push DWORD PTR [window]
+	call main_game_page
 	add esp, 4
 	jmp game_loop
 
