@@ -449,7 +449,7 @@ main_loop:
 
 start_game:
     ; 這裡可以添加進入音樂選擇頁面的邏輯
-    mov DWORD PTR [currentPage], 3
+    mov DWORD PTR [currentPage], 1
     jmp exit_program
 
 @end:

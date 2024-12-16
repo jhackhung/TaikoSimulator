@@ -1,0 +1,14 @@
+; windows.inc - 包含 Windows API 函數的定義
+
+EXTERN CreateFileA:PROC
+EXTERN ReadFile:PROC
+EXTERN CloseHandle:PROC
+
+; 定義常量
+GENERIC_READ         EQU 0x80000000
+FILE_SHARE_READ      EQU 0x00000001
+OPEN_EXISTING        EQU 3
+FILE_ATTRIBUTE_NORMAL EQU 0x00000080
+
+; 定義標準輸入/輸出
+EXTERN printf:PROC

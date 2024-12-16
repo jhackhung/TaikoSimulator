@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 12:40:57
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 14:23:36
 main_game_page.asm					     Page 1 - 1
 
 
@@ -172,6 +172,19 @@ main_game_page.asm					     Page 1 - 1
 			      C 
 			      C EXTERN sfSleep: PROC
 			      C 
+				include windows.inc
+			      C ; windows.inc - 包含 Windows API 函數的定義
+			      C 
+			      C EXTERN CreateFileA:PROC
+			      C EXTERN ReadFile:PROC
+			      C EXTERN CloseHandle:PROC
+			      C 
+			      C ; 定義常量
+ = 0x80000000		      C GENERIC_READ      EQU 0x80000000
+ = 0x00000001		      C FILE_SHARE_READ   EQU 0x00000001
+ = 00000003		      C OPEN_EXISTING     EQU 3
+ = 0x00000080		      C FILE_ATTRIBUTE_NORMAL EQU 0x00000080
+			      C 
 
 				extern currentPage: DWORD
 
@@ -198,11 +211,11 @@ main_game_page.asm					     Page 1 - 1
 	   6E 2F 73 6F 6E
 	   67 31 2E 6F 67
 	   67 00
- 0000005E 61 73 73 65 74	    selected_beatmap1_path db "assets/main/beatmap1.ogg", 0
+ 0000005E 61 73 73 65 74	    selected_beatmap1_path db "assets/main/beatmap1.tja", 0
 	   73 2F 6D 61 69
 	   6E 2F 62 65 61
 	   74 6D 61 70 31
-	   2E 6F 67 67 00
+	   2E 74 6A 61 00
 
 				    ; CSFML 物件
  00000077 00000000		    bgTexture dd 0               ; 背景紋理
@@ -391,7 +404,7 @@ main_game_page.asm					     Page 1 - 1
  00000141			main_game_page ENDP
 
 				END main_game_page
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 12:40:57
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 14:23:36
 main_game_page.asm					     Symbols 2 - 1
 
 
@@ -477,6 +490,13 @@ Symbols:
 @fardata?  . . . . . . . . . . .	Text   	 FLAT
 @fardata . . . . . . . . . . . .	Text   	 FLAT
 @stack . . . . . . . . . . . . .	Text   	 FLAT
+CloseHandle  . . . . . . . . . .	L Near	 00000000 FLAT	External C
+CreateFileA  . . . . . . . . . .	L Near	 00000000 FLAT	External C
+FILE_ATTRIBUTE_NORMAL  . . . . .	Text   	 0x00000080
+FILE_SHARE_READ  . . . . . . . .	Text   	 0x00000001
+GENERIC_READ . . . . . . . . . .	Text   	 0x80000000
+OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
+ReadFile . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
 bgMusic  . . . . . . . . . . . .	DWord	 00000093 _DATA	
 bgSprite . . . . . . . . . . . .	DWord	 0000007B _DATA	
 bgTexture  . . . . . . . . . . .	DWord	 00000077 _DATA	

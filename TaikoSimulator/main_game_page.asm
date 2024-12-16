@@ -2,6 +2,7 @@
 .XMM
 .model flat, c
 include csfml.inc
+include windows.inc
 
 extern currentPage: DWORD
 
@@ -11,7 +12,7 @@ extern currentPage: DWORD
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
 
     selected_music_path db "assets/main/song1.ogg", 0
-    selected_beatmap1_path db "assets/main/beatmap1.ogg", 0
+    selected_beatmap1_path db "assets/main/beatmap1.tja", 0
 
     ; CSFML ª«¥ó
     bgTexture dd 0               ; ­I´º¯¾²z

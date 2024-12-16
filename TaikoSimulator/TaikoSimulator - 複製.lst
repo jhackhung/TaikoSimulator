@@ -1,0 +1,1499 @@
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 13:26:48
+select_music_page.asm					     Page 1 - 1
+
+
+				.686P
+				.XMM
+				.model flat, c
+				include csfml.inc
+			      C ; CSFML.INC - SFML Definitions for x86 Assembly
+			      C ; �ϥ� MASM �y�k
+			      C 
+			      C includelib csfml-audio.lib
+			      C includelib csfml-graphics.lib
+			      C includelib csfml-system.lib
+			      C includelib csfml-window.lib
+			      C 
+			      C ; sfBool �w�q
+ = 00000000		      C sfFalse     equ 0
+ = 00000001		      C sfTrue      equ 1
+			      C 
+			      C ; sfEventType �w�q
+ = 00000000		      C sfEvtClosed               equ 0
+ = 00000001		      C sfEvtResized              equ 1
+ = 00000002		      C sfEvtLostFocus            equ 2
+ = 00000003		      C sfEvtGainedFocus          equ 3
+ = 00000004		      C sfEvtTextEntered          equ 4
+ = 00000005		      C sfEvtKeyPressed           equ 5
+ = 00000006		      C sfEvtKeyReleased          equ 6
+ = 00000007		      C sfEvtMouseWheelMoved      equ 7
+ = 00000008		      C sfEvtMouseWheelScrolled   equ 8
+ = 00000009		      C sfEvtMouseButtonPressed   equ 9
+ = 0000000A		      C sfEvtMouseButtonReleased  equ 10
+ = 0000000B		      C sfEvtMouseMoved           equ 11
+ = 0000000C		      C sfEvtMouseEntered         equ 12
+ = 0000000D		      C sfEvtMouseLeft            equ 13
+			      C 
+			      C ; sfMouseButton �w�q
+ = 00000000		      C sfMouseLeft   equ 0
+ = 00000001		      C sfMouseRight  equ 1
+ = 00000002		      C sfMouseMiddle equ 2
+			      C 
+			      C ; sfKey �w�q
+ = 0000003A		      C sfKeyEnter    equ 58
+ = 00000000		      C sfKeyA        equ 0
+ = 00000012		      C sfKeyS        equ 18
+ = 00000003		      C sfKeyD        equ 3
+ = 00000024		      C sfKeyEscape   equ 36
+			      C 
+			      C ; ��������w�q
+ = 00000000		      C sfNone       equ 0
+ = 00000001		      C sfTitlebar   equ 1
+ = 00000002		      C sfResize     equ 2
+ = 00000004		      C sfClose      equ 4
+ = 00000008		      C sfFullscreen equ 8
+			      C 
+			      C ; ���c��w�q
+ 00000008		      C sfVector2f STRUCT
+ 00000000  00000000	      C     x REAL4 ?
+ 00000004  00000000	      C     y REAL4 ?
+			      C sfVector2f ENDS
+			      C 
+ 00000008		      C sfVector2i STRUCT
+ 00000000  00000000	      C     x SDWORD ?
+ 00000004  00000000	      C     y SDWORD ?
+			      C sfVector2i ENDS
+			      C 
+ 0000000C		      C sfVideoMode STRUCT
+ 00000000  00000000	      C     _width  DWORD ?
+ 00000004  00000000	      C     height DWORD ?
+ 00000008  00000000	      C     bpp    DWORD ?
+			      C sfVideoMode ENDS
+			      C 
+ 00000004		      C sfColor STRUCT
+ 00000000  00		      C     r BYTE ?
+ 00000001  00		      C     g BYTE ?
+ 00000002  00		      C     b BYTE ?
+ 00000003  00		      C     a BYTE ?
+			      C sfColor ENDS
+			      C 
+ 00000010		      C sfFloatRect STRUCT
+ 00000000  00000000	      C     left   REAL4 ?
+ 00000004  00000000	      C     top    REAL4 ?
+ 00000008  00000000	      C     _width  REAL4 ?
+ 0000000C  00000000	      C     height REAL4 ?
+			      C sfFloatRect ENDS
+			      C 
+ 0000000C		      C mouseButton STRUCT
+ 00000000  00000000	      C     button DWORD ?
+ 00000004  00000000	      C     x DWORD ?
+ 00000008  00000000	      C     y DWORD ?
+			      C mouseButton ENDS
+			      C 
+ 00000014		      C key STRUCT
+ 00000000  00000000	      C     code DWORD ?
+ 00000004  00000000	      C     alt DWORD ?
+ 00000008  00000000	      C     control DWORD ?
+ 0000000C  00000000	      C     shift DWORD ?
+ 00000010  00000000	      C     system DWORD ?
+			      C key ENDS
+			      C 
+ 00000030		      C sfEvent STRUCT
+ 00000000  00000000	      C     _type DWORD ?                
+ 00000004  00000000	      C     _size DWORD ?                
+ 00000008  00000000	      C     mouse mouseButton <>       
+	   00000000
+	   00000000
+ 00000014  00000000	      C     _key key <>                 
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+ 00000028  00000000	      C     mouseMove sfVector2i <>     
+	   00000000
+			      C sfEvent ENDS
+			      C 
+			      C ; ��ƭ쫬 - ��������
+			      C EXTERN sfRenderWindow_create:PROC
+			      C EXTERN sfRenderWindow_destroy:PROC
+			      C EXTERN sfRenderWindow_close:PROC
+			      C EXTERN sfRenderWindow_isOpen:PROC
+			      C EXTERN sfRenderWindow_clear:PROC
+			      C EXTERN sfRenderWindow_display:PROC
+			      C EXTERN sfRenderWindow_pollEvent:PROC
+			      C EXTERN sfRenderWindow_drawSprite:PROC
+			      C EXTERN sfRenderWindow_drawText:PROC
+			      C 
+			      C ; ��ƭ쫬 - ���z����
+			      C EXTERN sfTexture_createFromFile:PROC
+			      C EXTERN sfTexture_destroy:PROC
+			      C 
+			      C ; ��ƭ쫬 - ���F����
+			      C EXTERN sfSprite_create:PROC
+			      C EXTERN sfSprite_destroy:PROC
+			      C EXTERN sfSprite_setTexture:PROC
+			      C 
+			      C ; ��ƭ쫬 - ���֬���
+			      C EXTERN sfMusic_createFromFile:PROC
+			      C EXTERN sfMusic_destroy:PROC
+			      C EXTERN sfMusic_play:PROC
+			      C EXTERN sfMusic_setLoop:PROC
+			      C EXTERN sfMusic_stop: PROC
+			      C EXTERN sfMusic_getStatus: PROC
+			      C 
+			      C ; ��ƭ쫬 - ��r����
+			      C EXTERN sfFont_createFromFile:PROC
+			      C EXTERN sfFont_destroy:PROC
+			      C EXTERN sfText_create:PROC
+			      C EXTERN sfText_destroy:PROC
+			      C EXTERN sfText_setFont:PROC
+			      C EXTERN sfText_setString:PROC
+			      C EXTERN sfText_setCharacterSize:PROC
+			      C EXTERN sfText_setFillColor:PROC
+			      C EXTERN sfText_setOutlineColor:PROC
+			      C EXTERN sfText_setOutlineThickness:PROC
+			      C EXTERN sfText_getLocalBounds:PROC
+			      C EXTERN sfText_getGlobalBounds:PROC
+			      C EXTERN sfText_setPosition:PROC
+			      C 
+			      C ; ��ƭ쫬 - �C�����
+			      C EXTERN sfColor_fromRGB:PROC
+			      C EXTERN sfColor_fromRGBA:PROC
+			      C 
+			      C ; ��ƭ쫬 - �x�ά���
+			      C EXTERN sfRectangleShape_create: PROC
+			      C EXTERN sfRectangleShape_setPosition: PROC
+			      C EXTERN sfRectangleShape_setSize: PROC
+			      C EXTERN sfRectangleShape_setFillColor: PROC
+			      C EXTERN sfRectangleShape_setOutlineThickness: PROC
+			      C EXTERN sfRenderWindow_drawRectangleShape: PROC
+			      C EXTERN sfRectangleShape_destroy: PROC
+			      C EXTERN sfRectangleShape_setOutlineColor: PROC
+			      C 
+			      C EXTERN sfSleep: PROC
+			      C 
+
+				extern currentPage: DWORD
+
+ = 00000000			BUTTON_STATE_NORMAL equ 0
+ = 00000001			BUTTON_STATE_PRESSED equ 1
+
+ 00000008			Button STRUCT
+ 00000000  00000000		    shape dd ?
+ 00000004  00000000		    state dd ?
+				Button ENDS
+
+ 00000000			.data
+				    ; 檔案路徑
+				    ;music1_path db "assets/main/song1.ogg", 0
+ 00000000 61 73 73 65 74	    music1_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
+	   73 2F 6E 65 76
+	   65 72 2D 67 6F
+	   6E 6E 61 2D 67
+	   69 76 65 2D 79
+	   6F 75 2D 75 70
+	   2D 6F 66 66 69
+	   63 69 61 6C 2D
+	   6D 75 73 69 63
+	   2D 76 69 64 65
+	   6F 2E 6D 70 33
+	   00
+
+ 00000038 61 73 73 65 74	    music2_path db "assets/main/song2.ogg", 0
+	   73 2F 6D 61 69
+	   6E 2F 73 6F 6E
+	   67 32 2E 6F 67
+	   67 00
+ 0000004E 61 73 73 65 74	    music3_path db "assets/main/song3.ogg", 0
+	   73 2F 6D 61 69
+	   6E 2F 73 6F 6E
+	   67 33 2E 6F 67
+	   67 00
+ 00000064 61 73 73 65 74	    bg_path db "assets/main/song_select_bg.jpg", 0
+	   73 2F 6D 61 69
+	   6E 2F 73 6F 6E
+	   67 5F 73 65 6C
+	   65 63 74 5F 62
+	   67 2E 6A 70 67
+	   00
+ 00000083 61 73 73 65 74	    font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
+	   73 2F 6D 61 69
+	   6E 2F 54 61 69
+	   6B 6F 5F 4E 6F
+	   5F 54 61 74 73
+	   75 6A 69 6E 5F
+	   4F 66 66 69 63
+	   69 61 6C 5F 46
+	   6F 6E 74 2E 74
+	   74 66 00
+
+ 000000B3 61 73 73 65 74	    selected_music_path db "assets/main/song1.ogg", 0
+	   73 2F 6D 61 69
+	   6E 2F 73 6F 6E
+	   67 31 2E 6F 67
+	   67 00
+ 000000C9 61 73 73 65 74	    selected_beatmap1_path db "assets/main/beatmap1.ogg", 0
+	   73 2F 6D 61 69
+	   6E 2F 62 65 61
+	   74 6D 61 70 31
+	   2E 6F 67 67 00
+
+ 000000E2 61 73 73 65 74	    beatmap1_path db "assets/main/beatmap1.ogg", 0
+	   73 2F 6D 61 69
+	   6E 2F 62 65 61
+	   74 6D 61 70 31
+	   2E 6F 67 67 00
+				   
+				    ; 提示文字
+ 000000FB 53 6F 6E 67 20	    song1_string db "Song 1", 0
+	   31 00
+ 00000102 53 6F 6E 67 20	    song2_string  db "Song 2", 0
+	   32 00
+ 00000109 53 6F 6E 67 20	    song3_string  db "Song 3", 0
+	   33 00
+ 00000110 49 6E 74 72 6F	    instruction_string db "Introduction", 0
+	   64 75 63 74 69
+	   6F 6E 00
+				    
+				    ; CSFML物件
+				    ; window dd 0
+ 0000011D 00000000		    bgTexture dd 0
+ 00000121 00000000		    bgSprite dd 0
+ 00000125 00000000		    bgMusic dd 0
+ 00000129 00000000		    font dd 0
+
+ 0000012D 00000000		    song1Text dd 0
+ 00000131 00000000		    song2Text dd 0
+ 00000135 00000000		    song3Text dd 0
+ 00000139 00000000		    instructionText dd 0
+
+
+ 0000013D 00000000		    KeyA_state dd 0 ; 追蹤按鍵是否按下
+ 00000141 00000000		    KeyS_state dd 0
+ 00000145 00000000		    KeyD_state dd 0
+
+ 00000149 00000000		    song1Bounds sfFloatRect <>
+	   00000000
+	   00000000
+	   00000000
+ 00000159 00000000		    song2Bounds sfFloatRect <>
+	   00000000
+	   00000000
+	   00000000
+ 00000169 00000000		    song3Bounds sfFloatRect <>
+	   00000000
+	   00000000
+	   00000000
+ 00000179 00000000		    instructionBounds sfFloatRect <>
+	   00000000
+	   00000000
+	   00000000
+
+				    ; 視窗設定
+				    ;window_videoMode sfVideoMode <1280, 720, 32>
+ 00000189 44A00000		    window_realWidth dd 044a00000r ; 1280.0
+				    ; 事件結構
+ 0000018D 00000000		    event sfEvent <>
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+	   00000000
+
+				    ; 顏色常數
+ 000001BD A9 A9 A9 FF		    gray_color sfColor <169, 169, 169, 255>
+ 000001C1 69 69 69 FF		    dark_gray_color sfColor <105, 105, 105, 255>
+ 000001C5 D2 D2 D2 FF		    light_gray_color sfColor <210, 210, 210, 255>
+ 000001C9 FF EF C6 FF		    beige_color sfColor <255, 239, 198, 255>
+ 000001CD 00 00 00 FF		    black_color sfColor <0, 0, 0, 255>
+
+				    ; 按鈕物件
+ 000001D1 00000000		    button1_shape Button <>
+	   00000000
+ 000001D9 00000000		    button2_shape Button <>
+	   00000000
+ 000001E1 00000000		    button3_shape Button <>
+	   00000000
+ 000001E9 00000000		    instruction_shape Button <>
+	   00000000
+				        
+				    ; 常數
+ 000001F1 43C80000		    button_x REAL4 400.0
+ 000001F5 43160000		    button1_y REAL4 150.0
+ 000001F9 437A0000		    button2_y REAL4 250.0
+ 000001FD 43AF0000		    button3_y REAL4 350.0
+ 00000201 43200000		    instruction_x REAL4 160.0
+ 00000205 43FA0000		    instruction_y REAL4 500.0
+ 00000209 43F00000		    button_width REAL4 480.0
+ 0000020D 44700000		    instruction_width REAL4 960.0
+ 00000211 42700000		    button_height REAL4 60.0
+ 00000215 43160000		    instruction_height REAL4 150.0
+ 00000219 40400000		    outline_thickness REAL4 3.0
+
+ 0000021D 40000000		    two dd 2.0
+ 00000221 43200000		    const_160 dd 160.0
+ 00000225 43820000		    const_260 dd 260.0
+ 00000229 43B40000		    const_360 dd 360.0
+ 0000022D 44098000		    const_550 dd 550.0
+
+ 00000000			.code
+
+				; 載入背景
+ 00000000			@load_background PROC
+				    ; 創建背景紋理
+ 00000000  6A 00		    push 0
+ 00000002  68 00000064 R	    push offset bg_path
+ 00000007  E8 00000000 E	    call sfTexture_createFromFile
+ 0000000C  83 C4 08		    add esp, 8
+ 0000000F  A3 0000011D R	    mov bgTexture, eax
+				    
+				    ; 創建背景精靈
+ 00000014  E8 00000000 E	    call sfSprite_create
+ 00000019  A3 00000121 R	    mov DWORD PTR [bgSprite], eax
+				    
+				    ; 設定紋理
+ 0000001E  6A 01		    push 1
+ 00000020  A1 0000011D R	    mov eax, DWORD PTR [bgTexture]
+ 00000025  50			    push eax
+ 00000026  8B 0D 00000121 R	    mov ecx, DWORD PTR [bgSprite]
+ 0000002C  51			    push ecx
+ 0000002D  E8 00000000 E	   call sfSprite_setTexture
+ 00000032  83 C4 0C		    add esp, 12
+ 00000035  C3			    ret
+ 00000036			@load_background ENDP
+
+
+ 00000036			play_music PROC
+ 00000036  A1 00000125 R	    mov eax, bgMusic
+ 0000003B  83 F8 00		    cmp eax, 0
+ 0000003E  74 21		    je @create_music
+ 00000040  FF 35 00000125 R	    push dword ptr [bgMusic]
+ 00000046  E8 00000000 E	    call sfMusic_getStatus
+ 0000004B  83 C4 04		    add esp, 4
+ 0000004E  83 F8 02		    cmp eax, 2
+ 00000051  75 0E		    jne @create_music
+
+ 00000053			    @stop_music:
+ 00000053  FF 35 00000125 R		   push bgMusic
+ 00000059  E8 00000000 E		   call sfMusic_stop
+ 0000005E  83 C4 04			   add esp, 4
+
+ 00000061			    @create_music:
+ 00000061  FF 74 24 04				push [esp+4]
+ 00000065  E8 00000000 E			call sfMusic_createFromFile
+ 0000006A  83 C4 04				add esp, 4 
+ 0000006D  A3 00000125 R			mov bgMusic, eax
+
+ 00000072  50					push eax
+ 00000073  E8 00000000 E			call sfMusic_play
+ 00000078  83 C4 04				add esp, 4
+ 0000007B  C3					ret
+ 0000007C			play_music ENDP
+
+				; 設定Song1文字
+ 0000007C			setup_song1_text PROC
+				    ; Create font
+ 0000007C  68 00000083 R	    push offset font_path
+ 00000081  E8 00000000 E	    call sfFont_createFromFile
+ 00000086  83 C4 04		    add esp, 4
+ 00000089  A3 00000129 R	    mov font, eax
+				    
+				    ; Create text object
+ 0000008E  E8 00000000 E	    call sfText_create
+ 00000093  A3 0000012D R	    mov DWORD PTR [song1Text], eax
+				    
+				    ; Set font
+ 00000098  FF 35 00000129 R	    push font
+ 0000009E  A1 0000012D R	    mov eax, DWORD PTR [song1Text]
+ 000000A3  50			    push eax
+ 000000A4  E8 00000000 E	    call sfText_setFont
+ 000000A9  83 C4 08		    add esp, 8
+				    
+				    ; Set string
+ 000000AC  68 000000FB R	    push offset song1_string
+ 000000B1  A1 0000012D R	    mov eax, DWORD PTR [song1Text]
+ 000000B6  50			    push eax
+ 000000B7  E8 00000000 E	    call sfText_setString
+ 000000BC  83 C4 08		    add esp, 8
+				    
+				    ; Set character size
+ 000000BF  6A 20		    push 32
+ 000000C1  A1 0000012D R	    mov eax, DWORD PTR [song1Text]
+ 000000C6  50			    push eax
+ 000000C7  E8 00000000 E	    call sfText_setCharacterSize
+ 000000CC  83 C4 08		    add esp, 8
+				    
+				    ; Set fill color
+ 000000CF  FF 35 000001CD R	    push black_color
+ 000000D5  A1 0000012D R	    mov eax, DWORD PTR [song1Text]
+ 000000DA  50			    push eax
+ 000000DB  E8 00000000 E	    call sfText_setFillColor
+ 000000E0  83 C4 08		    add esp, 8
+				        
+				    ; Set position
+ 000000E3  83 EC 10		    sub esp, 16
+ 000000E6  8D 04 24		    lea eax, [esp]
+
+ 000000E9  FF 35 0000012D R	    push DWORD PTR [song1Text]
+ 000000EF  50			    push eax
+ 000000F0  E8 00000000 E	    call sfText_getLocalBounds
+ 000000F5  83 C4 08		    add esp, 8
+
+ 000000F8  8B 10		    mov edx, DWORD PTR [eax]
+ 000000FA  89 15 00000149 R	    mov DWORD PTR [song1Bounds.left], edx
+ 00000100  8B 48 04		    mov ecx, DWORD PTR [eax+4]
+ 00000103  89 0D 0000014D R	    mov DWORD PTR [song1Bounds.top], ecx
+ 00000109  8B 50 08		    mov edx, DWORD PTR [eax+8]
+ 0000010C  89 15 00000151 R	    mov DWORD PTR [song1Bounds._width], edx
+ 00000112  8B 40 0C		    mov eax, DWORD PTR [eax+12]
+ 00000115  A3 00000155 R	    mov DWORD PTR [song1Bounds.height], eax
+
+ 0000011A  83 C4 10		    add esp, 16
+				    
+				    ; Adjust position
+ 0000011D  F3/ 0F 10 05		    movss xmm0, DWORD PTR [window_realWidth]
+	   00000189 R
+ 00000125  F3/ 0F 5C 05		    subss xmm0, DWORD PTR [song1Bounds._width]
+	   00000151 R
+ 0000012D  F3/ 0F 10 0D		    movss xmm1, DWORD PTR [two]
+	   0000021D R
+ 00000135  F3/ 0F 5E C1		    divss xmm0, xmm1
+ 00000139  F3/ 0F 11 44 24	    movss DWORD PTR [esp-8], xmm0
+	   F8
+				    
+ 0000013F  F3/ 0F 10 05		    movss xmm0, DWORD PTR [const_160]
+	   00000221 R
+ 00000147  F3/ 0F 11 44 24	    movss DWORD PTR [esp-4], xmm0
+	   FC
+
+ 0000014D  8B F4		    mov esi, esp
+
+ 0000014F  FF 76 FC		    push DWORD PTR [esi-4] ; y (200.0)
+ 00000152  FF 76 F8		    push DWORD PTR [esi-8] ; x (centered)
+ 00000155  FF 35 0000012D R	    push DWORD PTR [song1Text]
+ 0000015B  E8 00000000 E	    call sfText_setPosition
+ 00000160  83 C4 0C		    add esp, 12
+
+ 00000163  C3			    ret
+ 00000164			setup_song1_text ENDP
+
+				; 設定Song2文字
+ 00000164			setup_song2_text PROC
+				    ; Create font
+ 00000164  68 00000083 R	    push offset font_path
+ 00000169  E8 00000000 E	    call sfFont_createFromFile
+ 0000016E  83 C4 04		    add esp, 4
+ 00000171  A3 00000129 R	    mov font, eax
+				    
+				    ; Create text object
+ 00000176  E8 00000000 E	    call sfText_create
+ 0000017B  A3 00000131 R	    mov DWORD PTR [song2Text], eax
+				    
+				    ; Set font
+ 00000180  FF 35 00000129 R	    push font
+ 00000186  A1 00000131 R	    mov eax, DWORD PTR [song2Text]
+ 0000018B  50			    push eax
+ 0000018C  E8 00000000 E	    call sfText_setFont
+ 00000191  83 C4 08		    add esp, 8
+				    
+				    ; Set string
+ 00000194  68 00000102 R	    push offset song2_string
+ 00000199  A1 00000131 R	    mov eax, DWORD PTR [song2Text]
+ 0000019E  50			    push eax
+ 0000019F  E8 00000000 E	    call sfText_setString
+ 000001A4  83 C4 08		    add esp, 8
+				    
+				    ; Set character size
+ 000001A7  6A 20		    push 32
+ 000001A9  A1 00000131 R	    mov eax, DWORD PTR [song2Text]
+ 000001AE  50			    push eax
+ 000001AF  E8 00000000 E	    call sfText_setCharacterSize
+ 000001B4  83 C4 08		    add esp, 8
+				    
+				    ; Set fill color
+ 000001B7  FF 35 000001CD R	    push black_color
+ 000001BD  A1 00000131 R	    mov eax, DWORD PTR [song2Text]
+ 000001C2  50			    push eax
+ 000001C3  E8 00000000 E	    call sfText_setFillColor
+ 000001C8  83 C4 08		    add esp, 8
+				        
+				    ; Set position
+ 000001CB  83 EC 10		    sub esp, 16
+ 000001CE  8D 04 24		    lea eax, [esp]
+
+ 000001D1  FF 35 00000131 R	    push DWORD PTR [song2Text]
+ 000001D7  50			    push eax
+ 000001D8  E8 00000000 E	    call sfText_getLocalBounds
+ 000001DD  83 C4 08		    add esp, 8
+
+ 000001E0  8B 10		    mov edx, DWORD PTR [eax]
+ 000001E2  89 15 00000159 R	    mov DWORD PTR [song2Bounds.left], edx
+ 000001E8  8B 48 04		    mov ecx, DWORD PTR [eax+4]
+ 000001EB  89 0D 0000015D R	    mov DWORD PTR [song2Bounds.top], ecx
+ 000001F1  8B 50 08		    mov edx, DWORD PTR [eax+8]
+ 000001F4  89 15 00000161 R	    mov DWORD PTR [song2Bounds._width], edx
+ 000001FA  8B 40 0C		    mov eax, DWORD PTR [eax+12]
+ 000001FD  A3 00000165 R	    mov DWORD PTR [song2Bounds.height], eax
+
+ 00000202  83 C4 10		    add esp, 16
+				    
+				    ; Adjust position
+ 00000205  F3/ 0F 10 05		    movss xmm0, DWORD PTR [window_realWidth]
+	   00000189 R
+ 0000020D  F3/ 0F 5C 05		    subss xmm0, DWORD PTR [song2Bounds._width]
+	   00000161 R
+ 00000215  F3/ 0F 10 0D		    movss xmm1, DWORD PTR [two]
+	   0000021D R
+ 0000021D  F3/ 0F 5E C1		    divss xmm0, xmm1
+ 00000221  F3/ 0F 11 44 24	    movss DWORD PTR [esp-8], xmm0
+	   F8
+				    
+ 00000227  F3/ 0F 10 05		    movss xmm0, DWORD PTR [const_260]
+	   00000225 R
+ 0000022F  F3/ 0F 11 44 24	    movss DWORD PTR [esp-4], xmm0
+	   FC
+
+ 00000235  8B F4		    mov esi, esp
+
+ 00000237  FF 76 FC		    push DWORD PTR [esi-4] ; y (200.0)
+ 0000023A  FF 76 F8		    push DWORD PTR [esi-8] ; x (centered)
+ 0000023D  FF 35 00000131 R	    push DWORD PTR [song2Text]
+ 00000243  E8 00000000 E	    call sfText_setPosition
+ 00000248  83 C4 0C		    add esp, 12
+
+ 0000024B  C3			    ret
+ 0000024C			setup_song2_text ENDP
+
+				; 設定Song3文字
+ 0000024C			setup_song3_text PROC
+				    ; Create font
+ 0000024C  68 00000083 R	    push offset font_path
+ 00000251  E8 00000000 E	    call sfFont_createFromFile
+ 00000256  83 C4 04		    add esp, 4
+ 00000259  A3 00000129 R	    mov font, eax
+				    
+				    ; Create text object
+ 0000025E  E8 00000000 E	    call sfText_create
+ 00000263  A3 00000135 R	    mov DWORD PTR [song3Text], eax
+				    
+				    ; Set font
+ 00000268  FF 35 00000129 R	    push font
+ 0000026E  A1 00000135 R	    mov eax, DWORD PTR [song3Text]
+ 00000273  50			    push eax
+ 00000274  E8 00000000 E	    call sfText_setFont
+ 00000279  83 C4 08		    add esp, 8
+				    
+				    ; Set string
+ 0000027C  68 00000109 R	    push offset song3_string
+ 00000281  A1 00000135 R	    mov eax, DWORD PTR [song3Text]
+ 00000286  50			    push eax
+ 00000287  E8 00000000 E	    call sfText_setString
+ 0000028C  83 C4 08		    add esp, 8
+				    
+				    ; Set character size
+ 0000028F  6A 20		    push 32
+ 00000291  A1 00000135 R	    mov eax, DWORD PTR [song3Text]
+ 00000296  50			    push eax
+ 00000297  E8 00000000 E	    call sfText_setCharacterSize
+ 0000029C  83 C4 08		    add esp, 8
+				    
+				    ; Set fill color
+ 0000029F  FF 35 000001CD R	    push black_color
+ 000002A5  A1 00000135 R	    mov eax, DWORD PTR [song3Text]
+ 000002AA  50			    push eax
+ 000002AB  E8 00000000 E	    call sfText_setFillColor
+ 000002B0  83 C4 08		    add esp, 8
+				       
+				    ; Set position
+ 000002B3  83 EC 10		    sub esp, 16
+ 000002B6  8D 04 24		    lea eax, [esp]
+
+ 000002B9  FF 35 00000135 R	    push DWORD PTR [song3Text]
+ 000002BF  50			    push eax
+ 000002C0  E8 00000000 E	    call sfText_getLocalBounds
+ 000002C5  83 C4 08		    add esp, 8
+
+ 000002C8  8B 10		    mov edx, DWORD PTR [eax]
+ 000002CA  89 15 00000169 R	    mov DWORD PTR [song3Bounds.left], edx
+ 000002D0  8B 48 04		    mov ecx, DWORD PTR [eax+4]
+ 000002D3  89 0D 0000016D R	    mov DWORD PTR [song3Bounds.top], ecx
+ 000002D9  8B 50 08		    mov edx, DWORD PTR [eax+8]
+ 000002DC  89 15 00000171 R	    mov DWORD PTR [song3Bounds._width], edx
+ 000002E2  8B 40 0C		    mov eax, DWORD PTR [eax+12]
+ 000002E5  A3 00000175 R	    mov DWORD PTR [song3Bounds.height], eax
+
+ 000002EA  83 C4 10		    add esp, 16
+				    
+				    ; Adjust position
+ 000002ED  F3/ 0F 10 05		    movss xmm0, DWORD PTR [window_realWidth]
+	   00000189 R
+ 000002F5  F3/ 0F 5C 05		    subss xmm0, DWORD PTR [song3Bounds._width]
+	   00000171 R
+ 000002FD  F3/ 0F 10 0D		    movss xmm1, DWORD PTR [two]
+	   0000021D R
+ 00000305  F3/ 0F 5E C1		    divss xmm0, xmm1
+ 00000309  F3/ 0F 11 44 24	    movss DWORD PTR [esp-8], xmm0
+	   F8
+				    
+ 0000030F  F3/ 0F 10 05		    movss xmm0, DWORD PTR [const_360]
+	   00000229 R
+ 00000317  F3/ 0F 11 44 24	    movss DWORD PTR [esp-4], xmm0
+	   FC
+
+ 0000031D  8B F4		    mov esi, esp
+
+ 0000031F  FF 76 FC		    push DWORD PTR [esi-4] ; y (200.0)
+ 00000322  FF 76 F8		    push DWORD PTR [esi-8] ; x (centered)
+ 00000325  FF 35 00000135 R	    push DWORD PTR [song3Text]
+ 0000032B  E8 00000000 E	    call sfText_setPosition
+ 00000330  83 C4 0C		    add esp, 12
+
+ 00000333  C3			    ret
+ 00000334			setup_song3_text ENDP
+
+				; 設定instruction文字
+ 00000334			setup_instruction_text PROC
+				    ; Create font
+ 00000334  68 00000083 R	    push offset font_path
+ 00000339  E8 00000000 E	    call sfFont_createFromFile
+ 0000033E  83 C4 04		    add esp, 4
+ 00000341  A3 00000129 R	    mov font, eax
+				    
+				    ; Create text object
+ 00000346  E8 00000000 E	    call sfText_create
+ 0000034B  A3 00000139 R	    mov DWORD PTR [instructionText], eax
+				    
+				    ; Set font
+ 00000350  FF 35 00000129 R	    push font
+ 00000356  A1 00000139 R	    mov eax, DWORD PTR [instructionText]
+ 0000035B  50			    push eax
+ 0000035C  E8 00000000 E	    call sfText_setFont
+ 00000361  83 C4 08		    add esp, 8
+				    
+				    ; Set string
+ 00000364  68 00000110 R	    push offset instruction_string
+ 00000369  A1 00000139 R	    mov eax, DWORD PTR [instructionText]
+ 0000036E  50			    push eax
+ 0000036F  E8 00000000 E	    call sfText_setString
+ 00000374  83 C4 08		    add esp, 8
+				    
+				    ; Set character size
+ 00000377  6A 20		    push 32
+ 00000379  A1 00000139 R	    mov eax, DWORD PTR [instructionText]
+ 0000037E  50			    push eax
+ 0000037F  E8 00000000 E	    call sfText_setCharacterSize
+ 00000384  83 C4 08		    add esp, 8
+				    
+				    ; Set fill color
+ 00000387  FF 35 000001CD R	    push black_color
+ 0000038D  A1 00000139 R	    mov eax, DWORD PTR [instructionText]
+ 00000392  50			    push eax
+ 00000393  E8 00000000 E	    call sfText_setFillColor
+ 00000398  83 C4 08		    add esp, 8
+				    
+				    ; Set position
+ 0000039B  83 EC 10		    sub esp, 16
+ 0000039E  8D 04 24		    lea eax, [esp]
+
+ 000003A1  FF 35 00000139 R	    push DWORD PTR [instructionText]
+ 000003A7  50			    push eax
+ 000003A8  E8 00000000 E	    call sfText_getLocalBounds
+ 000003AD  83 C4 08		    add esp, 8
+
+ 000003B0  8B 10		    mov edx, DWORD PTR [eax]
+ 000003B2  89 15 00000179 R	    mov DWORD PTR [instructionBounds.left], edx
+ 000003B8  8B 48 04		    mov ecx, DWORD PTR [eax+4]
+ 000003BB  89 0D 0000017D R	    mov DWORD PTR [instructionBounds.top], ecx
+ 000003C1  8B 50 08		    mov edx, DWORD PTR [eax+8]
+ 000003C4  89 15 00000181 R	    mov DWORD PTR [instructionBounds._width], edx
+ 000003CA  8B 40 0C		    mov eax, DWORD PTR [eax+12]
+ 000003CD  A3 00000185 R	    mov DWORD PTR [instructionBounds.height], eax
+
+ 000003D2  83 C4 10		    add esp, 16
+				    
+				    ; Adjust position
+ 000003D5  F3/ 0F 10 05		    movss xmm0, DWORD PTR [window_realWidth]
+	   00000189 R
+ 000003DD  F3/ 0F 5C 05		    subss xmm0, DWORD PTR [instructionBounds._width]
+	   00000181 R
+ 000003E5  F3/ 0F 10 0D		    movss xmm1, DWORD PTR [two]
+	   0000021D R
+ 000003ED  F3/ 0F 5E C1		    divss xmm0, xmm1
+ 000003F1  F3/ 0F 11 44 24	    movss DWORD PTR [esp-8], xmm0
+	   F8
+				    
+ 000003F7  F3/ 0F 10 05		    movss xmm0, DWORD PTR [const_550]
+	   0000022D R
+ 000003FF  F3/ 0F 11 44 24	    movss DWORD PTR [esp-4], xmm0
+	   FC
+
+ 00000405  8B F4		    mov esi, esp
+
+ 00000407  FF 76 FC		    push DWORD PTR [esi-4] ; y (200.0)
+ 0000040A  FF 76 F8		    push DWORD PTR [esi-8] ; x (centered)
+ 0000040D  FF 35 00000139 R	    push DWORD PTR [instructionText]
+ 00000413  E8 00000000 E	    call sfText_setPosition
+ 00000418  83 C4 0C		    add esp, 12
+
+ 0000041B  C3			    ret
+ 0000041C			setup_instruction_text ENDP
+
+				; 創建按鈕
+ 0000041C			create_button PROC
+				    
+ 0000041C  55			    push ebp
+ 0000041D  8B EC		    mov ebp, esp
+
+				    ; 呼叫函數創建矩形
+ 0000041F  E8 00000000 E	    call sfRectangleShape_create
+ 00000424  8B F0		    mov esi, eax  ; 儲存矩形物件
+
+				    ; 創建位置向量 !程式位置存在ebp+4
+ 00000426  FF 75 0C		    push dword ptr [ebp+12] ; y 座標
+ 00000429  FF 75 08		    push dword ptr [ebp+8]  ; x 座標
+ 0000042C  56			    push esi
+ 0000042D  E8 00000000 E	    call sfRectangleShape_setPosition
+ 00000432  83 C4 0C		    add esp, 12
+
+				    ; 設定大小
+ 00000435  FF 75 14		    push dword ptr [ebp+20] ; 高度
+ 00000438  FF 75 10		    push dword ptr [ebp+16] ; 寬度
+ 0000043B  56			    push esi
+ 0000043C  E8 00000000 E	    call sfRectangleShape_setSize
+ 00000441  83 C4 0C		    add esp, 12
+
+				    ; 設定填充顏色
+ 00000444  FF 35 000001BD R	    push gray_color
+ 0000044A  56			    push esi
+ 0000044B  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 00000450  83 C4 08		    add esp, 8
+
+				    ; 設定邊框顏色
+ 00000453  FF 35 000001C1 R	    push dark_gray_color
+ 00000459  56			    push esi
+ 0000045A  E8 00000000 E	    call sfRectangleShape_setOutlineColor
+ 0000045F  83 C4 08		    add esp, 8
+
+				    ; 設定邊框厚度  
+ 00000462  83 EC 04		    sub esp, 4
+ 00000465  F3/ 0F 10 05		    movss xmm0, dword ptr [outline_thickness]
+	   00000219 R
+ 0000046D  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+ 00000472  56			    push esi
+ 00000473  E8 00000000 E	    call sfRectangleShape_setOutlineThickness
+ 00000478  83 C4 08		    add esp, 8
+
+				    ; 返回按鈕物件
+ 0000047B  8B C6		    mov eax, esi
+
+ 0000047D  5D			    pop ebp
+ 0000047E  C3			    ret
+ 0000047F			create_button ENDP
+
+				; 初始化按鈕
+ 0000047F			init_buttons PROC
+				    ; 初始化按鈕1
+ 0000047F  51			    push ecx
+ 00000480  F3/ 0F 10 05		    movss xmm0, dword ptr [button_height]
+	   00000211 R
+ 00000488  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 0000048D  51			    push ecx
+ 0000048E  F3/ 0F 10 05		    movss xmm0, dword ptr [button_width]
+	   00000209 R
+ 00000496  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 0000049B  51			    push ecx
+ 0000049C  F3/ 0F 10 05		    movss xmm0, dword ptr [button1_y]
+	   000001F5 R
+ 000004A4  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 000004A9  51			    push ecx
+ 000004AA  F3/ 0F 10 05		    movss xmm0, dword ptr [button_x]
+	   000001F1 R
+ 000004B2  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 000004B7  E8 FFFFFF60		    call create_button
+ 000004BC  83 C4 10		    add esp, 16
+ 000004BF  A3 000001D1 R	    mov dword ptr [button1_shape], eax
+ 000004C4  C7 05 000001D5 R	    mov dword ptr [button1_shape.state], BUTTON_STATE_NORMAL
+	   00000000
+
+				    ; 初始化按鈕2
+ 000004CE  51			    push ecx
+ 000004CF  F3/ 0F 10 05		    movss xmm0, dword ptr [button_height]
+	   00000211 R
+ 000004D7  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 000004DC  51			    push ecx
+ 000004DD  F3/ 0F 10 05		    movss xmm0, dword ptr [button_width]
+	   00000209 R
+ 000004E5  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 000004EA  51			    push ecx
+ 000004EB  F3/ 0F 10 05		    movss xmm0, dword ptr [button2_y]
+	   000001F9 R
+ 000004F3  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 000004F8  51			    push ecx
+ 000004F9  F3/ 0F 10 05		    movss xmm0, dword ptr [button_x]
+	   000001F1 R
+ 00000501  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 00000506  E8 FFFFFF11		    call create_button
+ 0000050B  83 C4 10		    add esp, 16
+ 0000050E  A3 000001D9 R	    mov dword ptr [button2_shape], eax
+ 00000513  C7 05 000001DD R	    mov dword ptr [button2_shape.state], BUTTON_STATE_NORMAL
+	   00000000
+
+				    ; 初始化按鈕3
+ 0000051D  51			    push ecx
+ 0000051E  F3/ 0F 10 05		    movss xmm0, dword ptr [button_height]
+	   00000211 R
+ 00000526  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 0000052B  51			    push ecx
+ 0000052C  F3/ 0F 10 05		    movss xmm0, dword ptr [button_width]
+	   00000209 R
+ 00000534  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 00000539  51			    push ecx
+ 0000053A  F3/ 0F 10 05		    movss xmm0, dword ptr [button3_y]
+	   000001FD R
+ 00000542  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 00000547  51			    push ecx
+ 00000548  F3/ 0F 10 05		    movss xmm0, dword ptr [button_x]
+	   000001F1 R
+ 00000550  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 00000555  E8 FFFFFEC2		    call create_button
+ 0000055A  83 C4 10		    add esp, 16
+ 0000055D  A3 000001E1 R	    mov dword ptr [button3_shape], eax
+ 00000562  C7 05 000001E5 R	    mov dword ptr [button3_shape.state], BUTTON_STATE_NORMAL
+	   00000000
+
+				    ; 初始化介紹框
+ 0000056C  51			    push ecx
+ 0000056D  F3/ 0F 10 05		    movss xmm0, dword ptr [instruction_height]
+	   00000215 R
+ 00000575  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 0000057A  51			    push ecx
+ 0000057B  F3/ 0F 10 05		    movss xmm0, dword ptr [instruction_width]
+	   0000020D R
+ 00000583  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 00000588  51			    push ecx
+ 00000589  F3/ 0F 10 05		    movss xmm0, dword ptr [instruction_y]
+	   00000205 R
+ 00000591  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 00000596  51			    push ecx
+ 00000597  F3/ 0F 10 05		    movss xmm0, dword ptr [instruction_x]
+	   00000201 R
+ 0000059F  F3/ 0F 11 04 24	    movss dword ptr [esp], xmm0
+
+ 000005A4  E8 FFFFFE73		    call create_button
+ 000005A9  83 C4 10		    add esp, 16
+ 000005AC  A3 000001E9 R	    mov dword ptr [instruction_shape], eax
+ 000005B1  C7 05 000001ED R	    mov dword ptr [instruction_shape.state], BUTTON_STATE_NORMAL
+	   00000000
+
+				    ; 修改底部長方形顏色和邊框
+ 000005BB  FF 35 000001C9 R	    push beige_color  ; 鵝黃色
+ 000005C1  FF 35 000001E9 R	    push dword ptr [instruction_shape]
+ 000005C7  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 000005CC  83 C4 08		    add esp, 8
+
+ 000005CF  FF 35 000001CD R	    push black_color  ; 黑色邊框
+ 000005D5  FF 35 000001E9 R	    push dword ptr [instruction_shape]
+ 000005DB  E8 00000000 E	    call sfRectangleShape_setOutlineColor
+ 000005E0  83 C4 08		    add esp, 8
+
+ 000005E3  C3			    ret
+ 000005E4			init_buttons ENDP
+
+				; 釋放資源
+ 000005E4			cleanup PROC
+				    ; push window
+				    ; call sfRenderWindow_destroy
+
+ 000005E4  FF 35 00000125 R	    push bgMusic
+ 000005EA  E8 00000000 E	    call sfMusic_destroy
+ 000005EF  83 C4 04		    add esp, 4
+
+ 000005F2  FF 35 00000121 R	    push bgSprite
+ 000005F8  E8 00000000 E	    call sfSprite_destroy
+ 000005FD  83 C4 04		    add esp, 4
+
+ 00000600  FF 35 0000011D R	    push bgTexture
+ 00000606  E8 00000000 E	    call sfTexture_destroy
+ 0000060B  83 C4 04		    add esp, 4
+
+ 0000060E  FF 35 0000012D R	    push song1Text
+ 00000614  E8 00000000 E	    call sfText_destroy
+ 00000619  83 C4 04		    add esp, 4
+
+ 0000061C  FF 35 00000131 R	    push song2Text
+ 00000622  E8 00000000 E	    call sfText_destroy
+ 00000627  83 C4 04		    add esp, 4
+
+ 0000062A  FF 35 00000135 R	    push song3Text
+ 00000630  E8 00000000 E	    call sfText_destroy
+ 00000635  83 C4 04		    add esp, 4
+
+ 00000638  FF 35 00000139 R	    push instructionText
+ 0000063E  E8 00000000 E	    call sfText_destroy
+ 00000643  83 C4 04		    add esp, 4
+
+ 00000646  FF 35 00000129 R	    push font
+ 0000064C  E8 00000000 E	    call sfFont_destroy
+ 00000651  83 C4 04		    add esp, 4 
+				    
+ 00000654  FF 35 000001D1 R	    push dword ptr [button1_shape]
+ 0000065A  E8 00000000 E	    call sfRectangleShape_destroy
+ 0000065F  83 C4 04		    add esp, 4
+				    
+ 00000662  FF 35 000001D9 R	    push dword ptr [button2_shape]
+ 00000668  E8 00000000 E	    call sfRectangleShape_destroy
+ 0000066D  83 C4 04		    add esp, 4
+				    
+ 00000670  FF 35 000001E1 R	    push dword ptr [button3_shape]
+ 00000676  E8 00000000 E	    call sfRectangleShape_destroy
+ 0000067B  83 C4 04		    add esp, 4
+
+ 0000067E  FF 35 000001E9 R	    push dword ptr [instruction_shape]
+ 00000684  E8 00000000 E	    call sfRectangleShape_destroy
+ 00000689  83 C4 04		    add esp, 4
+				   
+ 0000068C  C3			    ret
+ 0000068D			cleanup ENDP
+
+ 0000068D			select_music_page PROC window:DWORD
+
+				   ; 載入背景
+ 00000690  E8 FFFFF96B		    call @load_background
+ 00000695  85 C0		    test eax, eax
+ 00000697  0F 84 0000030E	    jz @exit_program
+				    
+ 0000069D  C7 05 00000125 R	    mov bgMusic, 0
+	   00000000
+
+				    ; 設定按鈕
+ 000006A7  E8 FFFFFDD3		    call init_buttons
+
+				    ; 設定提示文字
+ 000006AC  E8 FFFFF9CB		    call setup_song1_text
+ 000006B1  E8 FFFFFAAE		    call setup_song2_text
+ 000006B6  E8 FFFFFB91		    call setup_song3_text
+ 000006BB  E8 FFFFFC74		    call setup_instruction_text
+
+ 000006C0			@main_loop:
+				    
+ 000006C0  8B 45 08		    mov eax, DWORD PTR [window]
+ 000006C3  50			    push eax
+ 000006C4  E8 00000000 E	    call sfRenderWindow_isOpen
+ 000006C9  83 C4 04		    add esp, 4
+ 000006CC  85 C0		    test eax, eax
+ 000006CE  0F 84 000002D7	    je @exit_program
+
+ 000006D4			    @event_loop:
+				        ; 事件處理
+ 000006D4  8D 35 0000018D R	        lea esi, event
+ 000006DA  56			        push esi
+ 000006DB  8B 45 08		        mov eax, window
+ 000006DE  50			        push eax
+ 000006DF  E8 00000000 E	        call sfRenderWindow_pollEvent
+ 000006E4  83 C4 08		        add esp, 8
+ 000006E7  85 C0		        test eax, eax
+ 000006E9  0F 84 000001E0	        je @render_window
+				    
+				        ; 檢查關閉事件
+ 000006EF  83 3E 00		        cmp dword ptr [esi].sfEvent._type, sfEvtClosed
+ 000006F2  0F 84 000002A9	        je @end
+
+				        ; 檢查滑鼠點擊
+ 000006F8  83 3E 09		        cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
+ 000006FB  0F 84 000001CE	        je @render_window
+				    
+				        ; 檢查鍵盤事件
+ 00000701  83 3E 05		        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
+ 00000704  74 02		        je @check_key_press
+
+ 00000706  EB CC		        jmp @event_loop
+
+ 00000708			        @check_key_press:
+ 00000708  83 7E 04 00		            cmp dword ptr [esi+4], sfKeyA
+ 0000070C  74 20		            je @key_1_pressed
+
+ 0000070E  83 7E 04 12		            cmp dword ptr [esi+4], sfKeyS
+ 00000712  0F 84 00000082	            je @key_2_pressed
+
+ 00000718  83 7E 04 03		            cmp dword ptr [esi+4], sfKeyD
+ 0000071C  0F 84 000000E4	            je @key_3_pressed
+
+ 00000722  83 7E 04 3A		            cmp dword ptr [esi+4], sfKeyEnter
+ 00000726  0F 84 00000146	            je @check_enter     
+				            
+ 0000072C  EB A6		            jmp @event_loop
+
+ 0000072E			@key_1_pressed:
+ 0000072E  C7 05 0000013D R	    mov dword ptr [KeyA_state], 1 ; 設定狀態已按下 
+	   00000001
+ 00000738  C7 05 00000141 R	    mov dword ptr [KeyS_state], 0
+	   00000000
+ 00000742  C7 05 00000145 R	    mov dword ptr [KeyD_state], 0
+	   00000000
+
+ 0000074C  68 00000000 R	    push offset music1_path
+ 00000751  E8 FFFFF8E0		    call play_music
+ 00000756  83 C4 04		    add esp, 4
+
+ 00000759  FF 35 000001C5 R	    push light_gray_color
+ 0000075F  FF 35 000001D1 R	    push DWORD PTR [button1_shape]
+ 00000765  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 0000076A  83 C4 08		    add esp, 8
+
+ 0000076D  FF 35 000001BD R	    push gray_color
+ 00000773  FF 35 000001D9 R	    push DWORD PTR [button2_shape]
+ 00000779  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 0000077E  83 C4 08		    add esp, 8
+
+ 00000781  FF 35 000001BD R	    push gray_color
+ 00000787  FF 35 000001E1 R	    push DWORD PTR [button3_shape]
+ 0000078D  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 00000792  83 C4 08		    add esp, 8
+ 00000795  E9 FFFFFF3A		    jmp @event_loop
+
+ 0000079A			@key_2_pressed:
+ 0000079A  C7 05 00000141 R	    mov dword ptr [KeyS_state], 1 ; 設定狀態已按下
+	   00000001
+ 000007A4  C7 05 0000013D R	    mov dword ptr [KeyA_state], 0
+	   00000000
+ 000007AE  C7 05 00000145 R	    mov dword ptr [KeyD_state], 0
+	   00000000
+
+ 000007B8  68 00000038 R	    push offset music2_path
+ 000007BD  E8 FFFFF874		    call play_music
+ 000007C2  83 C4 04		    add esp, 4
+
+ 000007C5  FF 35 000001C5 R	    push light_gray_color
+ 000007CB  FF 35 000001D9 R	    push DWORD PTR [button2_shape]
+ 000007D1  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 000007D6  83 C4 08		    add esp, 8
+
+ 000007D9  FF 35 000001BD R	    push gray_color
+ 000007DF  FF 35 000001D1 R	    push DWORD PTR [button1_shape]
+ 000007E5  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 000007EA  83 C4 08		    add esp, 8
+
+ 000007ED  FF 35 000001BD R	    push gray_color
+ 000007F3  FF 35 000001E1 R	    push DWORD PTR [button3_shape]
+ 000007F9  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 000007FE  83 C4 08		    add esp, 8
+ 00000801  E9 FFFFFECE		    jmp @event_loop
+
+ 00000806			@key_3_pressed:
+ 00000806  C7 05 00000145 R	    mov dword ptr [KeyD_state], 1 ; 設定狀態已按下
+	   00000001
+ 00000810  C7 05 0000013D R	    mov dword ptr [KeyA_state], 0
+	   00000000
+ 0000081A  C7 05 00000141 R	    mov dword ptr [KeyS_state], 0
+	   00000000
+
+ 00000824  68 0000004E R	    push offset music3_path
+ 00000829  E8 FFFFF808		    call play_music
+ 0000082E  83 C4 04		    add esp, 4
+
+ 00000831  FF 35 000001C5 R	    push light_gray_color
+ 00000837  FF 35 000001E1 R	    push DWORD PTR [button3_shape]
+ 0000083D  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 00000842  83 C4 08		    add esp, 8
+
+ 00000845  FF 35 000001BD R	    push gray_color
+ 0000084B  FF 35 000001D1 R	    push DWORD PTR [button1_shape]
+ 00000851  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 00000856  83 C4 08		    add esp, 8
+
+ 00000859  FF 35 000001BD R	    push gray_color
+ 0000085F  FF 35 000001D9 R	    push DWORD PTR [button2_shape]
+ 00000865  E8 00000000 E	    call sfRectangleShape_setFillColor
+ 0000086A  83 C4 08		    add esp, 8
+ 0000086D  E9 FFFFFE62		    jmp @event_loop
+
+ 00000872			@check_enter:
+ 00000872  83 3D 0000013D R	    cmp dword ptr [KeyA_state], 1 
+	   01
+ 00000879  74 18		    je @keyA_enter
+
+ 0000087B  83 3D 00000141 R	    cmp dword ptr [KeyS_state], 1 
+	   01
+ 00000882  74 23		    je @keyS_enter
+
+ 00000884  83 3D 00000145 R	    cmp dword ptr [KeyD_state], 1 
+	   01
+ 0000088B  74 2E		    je @keyD_enter
+
+ 0000088D  0F 85 FFFFFE41	    jne @event_loop              
+
+ 00000893			@keyA_enter:
+ 00000893  C7 05 00000000 E	    mov DWORD PTR [currentPage], 3
+	   00000003
+ 0000089D  BB 00000000 R	    mov ebx, offset music1_path
+ 000008A2  E9 00000104		    jmp @exit_program
+
+ 000008A7			@keyS_enter:
+ 000008A7  C7 05 00000000 E	    mov DWORD PTR [currentPage], 2
+	   00000002
+ 000008B1  BB 00000038 R	    mov ebx, offset music2_path
+ 000008B6  E9 000000F0		    jmp @exit_program
+
+ 000008BB			@keyD_enter:
+ 000008BB  C7 05 00000000 E	    mov DWORD PTR [currentPage], 2
+	   00000002
+ 000008C5  BB 0000004E R	    mov ebx, offset music3_path
+ 000008CA  E9 000000DC		    jmp @exit_program
+				    
+ 000008CF			@render_window: 
+				    ; 清除視窗
+ 000008CF  FF 35 000001CD R	    push black_color
+ 000008D5  FF 75 08		    push window
+ 000008D8  E8 00000000 E	    call sfRenderWindow_clear
+ 000008DD  83 C4 08		    add esp, 8
+				    
+				    ; 繪製背景
+ 000008E0  6A 00		    push 0
+ 000008E2  A1 00000121 R	    mov eax, DWORD PTR [bgSprite]
+ 000008E7  50			    push eax
+ 000008E8  8B 4D 08		    mov ecx, DWORD PTR [window]
+ 000008EB  51			    push ecx
+ 000008EC  E8 00000000 E	    call sfRenderWindow_drawSprite
+ 000008F1  83 C4 0C		    add esp, 12
+
+				    ; 繪製按鈕
+ 000008F4  6A 00		    push 0
+ 000008F6  A1 000001D1 R	    mov eax, DWORD PTR [button1_shape]
+ 000008FB  50			    push eax
+ 000008FC  8B 4D 08		    mov ecx, DWORD PTR [window]
+ 000008FF  51			    push ecx
+ 00000900  E8 00000000 E	    call sfRenderWindow_drawRectangleShape
+ 00000905  83 C4 0C		    add esp, 12
+
+ 00000908  6A 00		    push 0
+ 0000090A  A1 000001D9 R	    mov eax, DWORD PTR [button2_shape]
+ 0000090F  50			    push eax
+ 00000910  8B 4D 08		    mov ecx, DWORD PTR [window]
+ 00000913  51			    push ecx
+ 00000914  E8 00000000 E	    call sfRenderWindow_drawRectangleShape
+ 00000919  83 C4 0C		    add esp, 12
+				    
+ 0000091C  6A 00		    push 0
+ 0000091E  A1 000001E1 R	    mov eax, DWORD PTR [button3_shape]
+ 00000923  50			    push eax
+ 00000924  8B 4D 08		    mov ecx, DWORD PTR [window]
+ 00000927  51			    push ecx
+ 00000928  E8 00000000 E	    call sfRenderWindow_drawRectangleShape
+ 0000092D  83 C4 0C		    add esp, 12
+
+ 00000930  6A 00		    push 0
+ 00000932  A1 000001E9 R	    mov eax, DWORD PTR [instruction_shape]
+ 00000937  50			    push eax
+ 00000938  8B 4D 08		    mov ecx, DWORD PTR [window]
+ 0000093B  51			    push ecx
+ 0000093C  E8 00000000 E	    call sfRenderWindow_drawRectangleShape
+ 00000941  83 C4 0C		    add esp, 12
+
+				    ; 繪製song1
+ 00000944  6A 00		    push 0
+ 00000946  FF 35 0000012D R	    push DWORD PTR [song1Text]
+ 0000094C  FF 75 08		    push DWORD PTR [window]
+ 0000094F  E8 00000000 E	    call sfRenderWindow_drawText
+ 00000954  83 C4 0C		    add esp, 12
+
+				    ; 繪製song2
+ 00000957  6A 00		    push 0
+ 00000959  FF 35 00000131 R	    push DWORD PTR [song2Text]
+ 0000095F  FF 75 08		    push DWORD PTR [window]
+ 00000962  E8 00000000 E	    call sfRenderWindow_drawText
+ 00000967  83 C4 0C		    add esp, 12
+
+				    ; 繪製song3
+ 0000096A  6A 00		    push 0
+ 0000096C  FF 35 00000135 R	    push DWORD PTR [song3Text]
+ 00000972  FF 75 08		    push DWORD PTR [window]
+ 00000975  E8 00000000 E	    call sfRenderWindow_drawText
+ 0000097A  83 C4 0C		    add esp, 12
+
+				    ; 繪製instruction
+ 0000097D  6A 00		    push 0
+ 0000097F  FF 35 00000139 R	    push DWORD PTR [instructionText]
+ 00000985  FF 75 08		    push DWORD PTR [window]
+ 00000988  E8 00000000 E	    call sfRenderWindow_drawText
+ 0000098D  83 C4 0C		    add esp, 12
+
+				    ; 顯示視窗
+ 00000990  8B 45 08		    mov eax, DWORD PTR [window]
+ 00000993  50			    push eax
+ 00000994  E8 00000000 E	    call sfRenderWindow_display
+ 00000999  83 C4 04		    add esp, 4
+
+ 0000099C  E9 FFFFFD1F		    jmp @main_loop
+
+ 000009A1			@end:
+ 000009A1  C7 05 00000000 E	    mov DWORD PTR [currentPage], -1
+	   FFFFFFFF
+
+ 000009AB			@exit_program:
+ 000009AB  E8 FFFFFC34		    call cleanup
+ 000009B0  33 C0		    xor eax, eax
+				    ret
+
+ 000009B4			select_music_page ENDP
+
+				END select_music_page
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 13:26:48
+select_music_page.asm					     Symbols 2 - 1
+
+
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+Button . . . . . . . . . . . . .	 00000008
+  shape  . . . . . . . . . . . .	 00000000	 DWord
+  state  . . . . . . . . . . . .	 00000004	 DWord
+key  . . . . . . . . . . . . . .	 00000014
+  code . . . . . . . . . . . . .	 00000000	 DWord
+  alt  . . . . . . . . . . . . .	 00000004	 DWord
+  control  . . . . . . . . . . .	 00000008	 DWord
+  shift  . . . . . . . . . . . .	 0000000C	 DWord
+  system . . . . . . . . . . . .	 00000010	 DWord
+mouseButton  . . . . . . . . . .	 0000000C
+  button . . . . . . . . . . . .	 00000000	 DWord
+  x  . . . . . . . . . . . . . .	 00000004	 DWord
+  y  . . . . . . . . . . . . . .	 00000008	 DWord
+sfColor  . . . . . . . . . . . .	 00000004
+  r  . . . . . . . . . . . . . .	 00000000	 Byte
+  g  . . . . . . . . . . . . . .	 00000001	 Byte
+  b  . . . . . . . . . . . . . .	 00000002	 Byte
+  a  . . . . . . . . . . . . . .	 00000003	 Byte
+sfEvent  . . . . . . . . . . . .	 00000030
+  _type  . . . . . . . . . . . .	 00000000	 DWord
+  _size  . . . . . . . . . . . .	 00000004	 DWord
+  mouse  . . . . . . . . . . . .	 00000008	 
+  _key . . . . . . . . . . . . .	 00000014	 
+  mouseMove  . . . . . . . . . .	 00000028	 QWord
+sfFloatRect  . . . . . . . . . .	 00000010
+  left . . . . . . . . . . . . .	 00000000	 DWord
+  top  . . . . . . . . . . . . .	 00000004	 DWord
+  _width . . . . . . . . . . . .	 00000008	 DWord
+  height . . . . . . . . . . . .	 0000000C	 DWord
+sfVector2f . . . . . . . . . . .	 00000008
+  x  . . . . . . . . . . . . . .	 00000000	 DWord
+  y  . . . . . . . . . . . . . .	 00000004	 DWord
+sfVector2i . . . . . . . . . . .	 00000008
+  x  . . . . . . . . . . . . . .	 00000000	 DWord
+  y  . . . . . . . . . . . . . .	 00000004	 DWord
+sfVideoMode  . . . . . . . . . .	 0000000C
+  _width . . . . . . . . . . . .	 00000000	 DWord
+  height . . . . . . . . . . . .	 00000004	 DWord
+  bpp  . . . . . . . . . . . . .	 00000008	 DWord
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000231 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000009B4 Para	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+@load_background . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000036 Public C
+cleanup  . . . . . . . . . . . .	P Near	 000005E4 _TEXT	Length= 000000A9 Public C
+create_button  . . . . . . . . .	P Near	 0000041C _TEXT	Length= 00000063 Public C
+init_buttons . . . . . . . . . .	P Near	 0000047F _TEXT	Length= 00000165 Public C
+play_music . . . . . . . . . . .	P Near	 00000036 _TEXT	Length= 00000046 Public C
+  @stop_music  . . . . . . . . .	L Near	 00000053 _TEXT	
+  @create_music  . . . . . . . .	L Near	 00000061 _TEXT	
+select_music_page  . . . . . . .	P Near	 0000068D _TEXT	Length= 00000327 Public C
+  window . . . . . . . . . . . .	DWord	 bp + 00000008
+  @main_loop . . . . . . . . . .	L Near	 000006C0 _TEXT	
+  @event_loop  . . . . . . . . .	L Near	 000006D4 _TEXT	
+  @check_key_press . . . . . . .	L Near	 00000708 _TEXT	
+  @key_1_pressed . . . . . . . .	L Near	 0000072E _TEXT	
+  @key_2_pressed . . . . . . . .	L Near	 0000079A _TEXT	
+  @key_3_pressed . . . . . . . .	L Near	 00000806 _TEXT	
+  @check_enter . . . . . . . . .	L Near	 00000872 _TEXT	
+  @keyA_enter  . . . . . . . . .	L Near	 00000893 _TEXT	
+  @keyS_enter  . . . . . . . . .	L Near	 000008A7 _TEXT	
+  @keyD_enter  . . . . . . . . .	L Near	 000008BB _TEXT	
+  @render_window . . . . . . . .	L Near	 000008CF _TEXT	
+  @end . . . . . . . . . . . . .	L Near	 000009A1 _TEXT	
+  @exit_program  . . . . . . . .	L Near	 000009AB _TEXT	
+setup_instruction_text . . . . .	P Near	 00000334 _TEXT	Length= 000000E8 Public C
+setup_song1_text . . . . . . . .	P Near	 0000007C _TEXT	Length= 000000E8 Public C
+setup_song2_text . . . . . . . .	P Near	 00000164 _TEXT	Length= 000000E8 Public C
+setup_song3_text . . . . . . . .	P Near	 0000024C _TEXT	Length= 000000E8 Public C
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000001h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+BUTTON_STATE_NORMAL  . . . . . .	Number	 00000000h   
+BUTTON_STATE_PRESSED . . . . . .	Number	 00000001h   
+KeyA_state . . . . . . . . . . .	DWord	 0000013D _DATA	
+KeyD_state . . . . . . . . . . .	DWord	 00000145 _DATA	
+KeyS_state . . . . . . . . . . .	DWord	 00000141 _DATA	
+beatmap1_path  . . . . . . . . .	Byte	 000000E2 _DATA	
+beige_color  . . . . . . . . . .	sfColor	 000001C9 _DATA	
+bgMusic  . . . . . . . . . . . .	DWord	 00000125 _DATA	
+bgSprite . . . . . . . . . . . .	DWord	 00000121 _DATA	
+bgTexture  . . . . . . . . . . .	DWord	 0000011D _DATA	
+bg_path  . . . . . . . . . . . .	Byte	 00000064 _DATA	
+black_color  . . . . . . . . . .	sfColor	 000001CD _DATA	
+button1_shape  . . . . . . . . .	Button	 000001D1 _DATA	
+button1_y  . . . . . . . . . . .	DWord	 000001F5 _DATA	
+button2_shape  . . . . . . . . .	Button	 000001D9 _DATA	
+button2_y  . . . . . . . . . . .	DWord	 000001F9 _DATA	
+button3_shape  . . . . . . . . .	Button	 000001E1 _DATA	
+button3_y  . . . . . . . . . . .	DWord	 000001FD _DATA	
+button_height  . . . . . . . . .	DWord	 00000211 _DATA	
+button_width . . . . . . . . . .	DWord	 00000209 _DATA	
+button_x . . . . . . . . . . . .	DWord	 000001F1 _DATA	
+const_160  . . . . . . . . . . .	DWord	 00000221 _DATA	
+const_260  . . . . . . . . . . .	DWord	 00000225 _DATA	
+const_360  . . . . . . . . . . .	DWord	 00000229 _DATA	
+const_550  . . . . . . . . . . .	DWord	 0000022D _DATA	
+currentPage  . . . . . . . . . .	DWord	 00000000 FLAT	External C
+dark_gray_color  . . . . . . . .	sfColor	 000001C1 _DATA	
+event  . . . . . . . . . . . . .	sfEvent	 0000018D _DATA	
+font_path  . . . . . . . . . . .	Byte	 00000083 _DATA	
+font . . . . . . . . . . . . . .	DWord	 00000129 _DATA	
+gray_color . . . . . . . . . . .	sfColor	 000001BD _DATA	
+instructionBounds  . . . . . . .	sfFloatRect  00000179 _DATA	
+instructionText  . . . . . . . .	DWord	 00000139 _DATA	
+instruction_height . . . . . . .	DWord	 00000215 _DATA	
+instruction_shape  . . . . . . .	Button	 000001E9 _DATA	
+instruction_string . . . . . . .	Byte	 00000110 _DATA	
+instruction_width  . . . . . . .	DWord	 0000020D _DATA	
+instruction_x  . . . . . . . . .	DWord	 00000201 _DATA	
+instruction_y  . . . . . . . . .	DWord	 00000205 _DATA	
+light_gray_color . . . . . . . .	sfColor	 000001C5 _DATA	
+music1_path  . . . . . . . . . .	Byte	 00000000 _DATA	
+music2_path  . . . . . . . . . .	Byte	 00000038 _DATA	
+music3_path  . . . . . . . . . .	Byte	 0000004E _DATA	
+outline_thickness  . . . . . . .	DWord	 00000219 _DATA	
+selected_beatmap1_path . . . . .	Byte	 000000C9 _DATA	
+selected_music_path  . . . . . .	Byte	 000000B3 _DATA	
+sfClose  . . . . . . . . . . . .	Number	 00000004h   
+sfColor_fromRGBA . . . . . . . .	L Near	 00000000 FLAT	External C
+sfColor_fromRGB  . . . . . . . .	L Near	 00000000 FLAT	External C
+sfEvtClosed  . . . . . . . . . .	Number	 00000000h   
+sfEvtGainedFocus . . . . . . . .	Number	 00000003h   
+sfEvtKeyPressed  . . . . . . . .	Number	 00000005h   
+sfEvtKeyReleased . . . . . . . .	Number	 00000006h   
+sfEvtLostFocus . . . . . . . . .	Number	 00000002h   
+sfEvtMouseButtonPressed  . . . .	Number	 00000009h   
+sfEvtMouseButtonReleased . . . .	Number	 0000000Ah   
+sfEvtMouseEntered  . . . . . . .	Number	 0000000Ch   
+sfEvtMouseLeft . . . . . . . . .	Number	 0000000Dh   
+sfEvtMouseMoved  . . . . . . . .	Number	 0000000Bh   
+sfEvtMouseWheelMoved . . . . . .	Number	 00000007h   
+sfEvtMouseWheelScrolled  . . . .	Number	 00000008h   
+sfEvtResized . . . . . . . . . .	Number	 00000001h   
+sfEvtTextEntered . . . . . . . .	Number	 00000004h   
+sfFalse  . . . . . . . . . . . .	Number	 00000000h   
+sfFont_createFromFile  . . . . .	L Near	 00000000 FLAT	External C
+sfFont_destroy . . . . . . . . .	L Near	 00000000 FLAT	External C
+sfFullscreen . . . . . . . . . .	Number	 00000008h   
+sfKeyA . . . . . . . . . . . . .	Number	 00000000h   
+sfKeyD . . . . . . . . . . . . .	Number	 00000003h   
+sfKeyEnter . . . . . . . . . . .	Number	 0000003Ah   
+sfKeyEscape  . . . . . . . . . .	Number	 00000024h   
+sfKeyS . . . . . . . . . . . . .	Number	 00000012h   
+sfMouseLeft  . . . . . . . . . .	Number	 00000000h   
+sfMouseMiddle  . . . . . . . . .	Number	 00000002h   
+sfMouseRight . . . . . . . . . .	Number	 00000001h   
+sfMusic_createFromFile . . . . .	L Near	 00000000 FLAT	External C
+sfMusic_destroy  . . . . . . . .	L Near	 00000000 FLAT	External C
+sfMusic_getStatus  . . . . . . .	L Near	 00000000 FLAT	External C
+sfMusic_play . . . . . . . . . .	L Near	 00000000 FLAT	External C
+sfMusic_setLoop  . . . . . . . .	L Near	 00000000 FLAT	External C
+sfMusic_stop . . . . . . . . . .	L Near	 00000000 FLAT	External C
+sfNone . . . . . . . . . . . . .	Number	 00000000h   
+sfRectangleShape_create  . . . .	L Near	 00000000 FLAT	External C
+sfRectangleShape_destroy . . . .	L Near	 00000000 FLAT	External C
+sfRectangleShape_setFillColor  .	L Near	 00000000 FLAT	External C
+sfRectangleShape_setOutlineColor .	L Near	 00000000 FLAT	External C
+sfRectangleShape_setOutlineThickness .	L Near	 00000000 FLAT	External C
+sfRectangleShape_setPosition . .	L Near	 00000000 FLAT	External C
+sfRectangleShape_setSize . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_clear . . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_close . . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_create  . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_destroy . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_display . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_drawRectangleShape 	L Near	 00000000 FLAT	External C
+sfRenderWindow_drawSprite  . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_drawText  . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_isOpen  . . . . .	L Near	 00000000 FLAT	External C
+sfRenderWindow_pollEvent . . . .	L Near	 00000000 FLAT	External C
+sfResize . . . . . . . . . . . .	Number	 00000002h   
+sfSleep  . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
+sfSprite_create  . . . . . . . .	L Near	 00000000 FLAT	External C
+sfSprite_destroy . . . . . . . .	L Near	 00000000 FLAT	External C
+sfSprite_setTexture  . . . . . .	L Near	 00000000 FLAT	External C
+sfText_create  . . . . . . . . .	L Near	 00000000 FLAT	External C
+sfText_destroy . . . . . . . . .	L Near	 00000000 FLAT	External C
+sfText_getGlobalBounds . . . . .	L Near	 00000000 FLAT	External C
+sfText_getLocalBounds  . . . . .	L Near	 00000000 FLAT	External C
+sfText_setCharacterSize  . . . .	L Near	 00000000 FLAT	External C
+sfText_setFillColor  . . . . . .	L Near	 00000000 FLAT	External C
+sfText_setFont . . . . . . . . .	L Near	 00000000 FLAT	External C
+sfText_setOutlineColor . . . . .	L Near	 00000000 FLAT	External C
+sfText_setOutlineThickness . . .	L Near	 00000000 FLAT	External C
+sfText_setPosition . . . . . . .	L Near	 00000000 FLAT	External C
+sfText_setString . . . . . . . .	L Near	 00000000 FLAT	External C
+sfTexture_createFromFile . . . .	L Near	 00000000 FLAT	External C
+sfTexture_destroy  . . . . . . .	L Near	 00000000 FLAT	External C
+sfTitlebar . . . . . . . . . . .	Number	 00000001h   
+sfTrue . . . . . . . . . . . . .	Number	 00000001h   
+song1Bounds  . . . . . . . . . .	sfFloatRect  00000149 _DATA	
+song1Text  . . . . . . . . . . .	DWord	 0000012D _DATA	
+song1_string . . . . . . . . . .	Byte	 000000FB _DATA	
+song2Bounds  . . . . . . . . . .	sfFloatRect  00000159 _DATA	
+song2Text  . . . . . . . . . . .	DWord	 00000131 _DATA	
+song2_string . . . . . . . . . .	Byte	 00000102 _DATA	
+song3Bounds  . . . . . . . . . .	sfFloatRect  00000169 _DATA	
+song3Text  . . . . . . . . . . .	DWord	 00000135 _DATA	
+song3_string . . . . . . . . . .	Byte	 00000109 _DATA	
+two  . . . . . . . . . . . . . .	DWord	 0000021D _DATA	
+window_realWidth . . . . . . . .	DWord	 00000189 _DATA	
+
+	   0 Warnings
+	   0 Errors
