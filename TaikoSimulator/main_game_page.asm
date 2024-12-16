@@ -4,38 +4,16 @@
 include csfml.inc
 
 extern currentPage: DWORD
-;extern selected_music_path: DWORD
-;extern selected_beatmap1_path: DWORD
 
 .data
-    ; 判定窗口 (以毫秒計)
-    hitWindowGreat DWORD 35   ; "Great" 判定範圍
-    hitWindowGood  DWORD 80   ; "Good" 判定範圍
-    hitWindowMiss  DWORD 120  ; "Miss" 判定範圍
+    ; 檔案路徑
+    bg_path db "assets/main/game_bg.jpg", 0
+    font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
 
-    ; 結果統計
-    greatCounter DWORD 0      ; "Great" 計數
-    goodCounter  DWORD 0      ; "Good" 計數
-    missCounter  DWORD 0      ; "Miss" 計數
-    comboCounter DWORD 0      ; 目前連擊數
-    maxCombo     DWORD 0      ; 最大連擊數
-    scoreCounter DWORD 0      ; 總得分
-
-    ; 選中的音樂和譜面檔案
-    ;selectedMusicPath db 256 DUP(0)    ; 音樂檔案路徑
-    ;selectedBeatmapPath db 256 DUP(0)  ; 譜面檔案路徑
-
-    ; 時間與遊戲狀態
-    currentNoteIndex DWORD 0  ; 當前音符索引
-    currentSongTime DWORD 0   ; 當前歌曲時間 (毫秒)
-    lastJudgment DWORD -1     ; 上一次判定結果
-
-    ; 譜面音符時間
-    noteTimings DWORD 256 DUP(?) ; 儲存音符時間
-    noteCount DWORD 0            ; 總音符數量
+    selected_music_path db "assets/main/song1.ogg", 0
+    selected_beatmap1_path db "assets/main/beatmap1.ogg", 0
 
     ; CSFML 物件
-    bgMusic dd 0
     bgTexture dd 0               ; 背景紋理
     bgSprite dd 0                ; 背景精靈
     circleTexture dd 0           ; 圓形音符紋理
@@ -43,7 +21,11 @@ extern currentPage: DWORD
     font dd 0                    ; 字型
     scoreText dd 0               ; 分數文字
     comboText dd 0               ; 連擊文字
+    bgMusic dd 0
 
+    ; 視窗設定
+    ;window_videoMode sfVideoMode <1280, 720, 32>
+    window_realWidth dd 044a00000r ; 1280.0
     ; 事件結構
     event sfEvent <>
 
@@ -57,18 +39,13 @@ extern currentPage: DWORD
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
-    ; 檔案路徑
-    musicPath db "assets/main/song1.ogg", 0
-    bgPath db "assets\main\game_bg.jpg", 0
-    fontPath db "assets\main\Taiko_No_Tatsujin_Official_Font.ttf", 0
-
 .code
 
 ; 載入背景
-load_bg PROC
+@load_bg PROC
     ; 創建背景紋理
     push 0
-    push offset bgPath
+    push offset bg_path
     call sfTexture_createFromFile
     add esp, 8
     mov bgTexture, eax
@@ -83,13 +60,14 @@ load_bg PROC
     push eax
     mov ecx, DWORD PTR [bgSprite]
     push ecx
-    call sfSprite_setTexture
+   call sfSprite_setTexture
     add esp, 12
     ret
-load_bg ENDP
+@load_bg ENDP
+
 
 game_play_music PROC
-    push offset musicPath
+    push offset selected_music_path
     call sfMusic_createFromFile
     add esp, 4 
     mov bgMusic, eax
@@ -100,157 +78,78 @@ game_play_music PROC
     ret
 game_play_music ENDP
 
-check_notes PROC
-    ; 取得當前音符的時間並計算與當前歌曲時間的差距
-    mov esi, OFFSET noteTimings
-    mov eax, currentNoteIndex
-    mov ebx, DWORD PTR [esi + eax * 4]
-    sub ebx, currentSongTime
-
-    ; 判斷是否符合 "Great" 的窗口
-    cmp ebx, hitWindowGreat
-    jle handle_great
-    ; 判斷是否符合 "Good" 的窗口
-    cmp ebx, hitWindowGood
-    jle handle_good
-    ; 如果超過 "Miss" 窗口，則忽略該音符
-    cmp ebx, hitWindowMiss
-    jg skip_note
-
-handle_great:
-    ; 增加 "Great" 計數和分數，更新最大連擊
-    inc greatCounter
-    add scoreCounter, 300
-    inc comboCounter
-    mov eax, comboCounter
-    cmp eax, maxCombo
-    jle skip_max_combo
-    mov eax, maxCombo
-    mov eax, comboCounter
-skip_max_combo:
-;;    call update_score_text
-    inc currentNoteIndex
-    ret
-
-handle_good:
-    ; 增加 "Good" 計數和分數
-    inc goodCounter
-    add scoreCounter, 100
-    inc comboCounter
-;;    call update_score_text
-    inc currentNoteIndex
-    ret
-
-skip_note:
-    ; 如果音符已超過 "Miss" 窗口
-    cmp ebx, 0
-;;    jg RenderWindow
-    inc missCounter
-    mov comboCounter, 0
-;;    call update_score_text
-    inc currentNoteIndex
-    ret
-check_notes ENDP
-
 main_game_page PROC window:DWORD
-    ; 創建視窗
-    ;push OFFSET windowTitle
-    ;push 0
-    ;push OFFSET window_videoMode
-    ;call sfRenderWindow_create
-    ;mov window, eax
-    ;test eax, eax
-    ;jz ExitGame
 
-    call load_bg
+   ; 載入背景
+    call @load_bg
     test eax, eax
-    jz ExitGame
+    jz @exit_program
+    
+    mov bgMusic, 0
 
-    ; 加載背景與音符精靈
-    ;call load_background
-;;    call setup_notes
-
-    ; 初始化分數與文字顯示
-    ;call setup_text
-
-    ; 加載譜面檔案
-    ;call load_beatmap
-
-    ; 播放選中的音樂
-    ;push OFFSET selectedMusicPath
-    ;call sfMusic_createFromFile
-    ;add esp, 4
-    ;mov bgMusic, eax
-
-    ;push bgMusic
-    ;call sfMusic_play
-    ;add esp, 4
-
-    call game_play_music
-
-    ; 初始化遊戲狀態
-    mov currentNoteIndex, 0
-    mov currentSongTime, 0
-
-GameLoop:
-    ; 檢查視窗是否開啟
-    ;push window
-    ;call sfRenderWindow_isOpen
-    ;add esp, 4
-    ;test eax, eax
-    ;jz ExitGame
-
+@main_loop:
+    
     mov eax, DWORD PTR [window]
     push eax
     call sfRenderWindow_isOpen
     add esp, 4
     test eax, eax
-    je ExitGame
+    je @exit_program
 
-    ; 模擬時間流逝 (每次迴圈遞增 16 毫秒)
-    add currentSongTime, 16
+    @event_loop:
+        ; 事件處理
+        lea esi, event
+        push esi
+        mov eax, window
+        push eax
+        call sfRenderWindow_pollEvent
+        add esp, 8
+        test eax, eax
+        je @render_window
+    
+        ; 檢查關閉事件
+        cmp dword ptr [esi].sfEvent._type, sfEvtClosed
+        je @end
 
-    ; 檢查是否達到遊戲結束條件
-    mov eax, currentNoteIndex
-    cmp eax, noteCount
-    jge EndGame
+        ; 檢查滑鼠點擊
+        cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
+        je @render_window
 
-    ; 處理事件
-    lea esi, event
-    push esi
-    ;push window
-    mov eax, DWORD PTR [window]
-    call sfRenderWindow_pollEvent
+        ; 檢查按鍵事件 (按下空白鍵模擬音符判定)
+        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
+        je @end
+
+        jmp @event_loop
+    
+@render_window: 
+    ; 清除視窗
+    push blackColor
+    push window
+    call sfRenderWindow_clear
     add esp, 8
-    test eax, eax
-    je RenderWindow
+    
+    ; 繪製背景
+    push 0
+    mov eax, DWORD PTR [bgSprite]
+    push eax
+    mov ecx, DWORD PTR [window]
+    push ecx
+    call sfRenderWindow_drawSprite
+    add esp, 12
 
-    ; 檢查按鍵事件 (按下空白鍵模擬音符判定)
-    cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
-    je handle_key_input
+    ; 顯示視窗
+    mov eax, DWORD PTR [window]
+    push eax
+    call sfRenderWindow_display
+    add esp, 4
 
-RenderWindow:
-    ; 更新並渲染畫面
-;;    call render_game_window
+    jmp @main_loop
 
-    ; 檢查當前音符的判定
-    call check_notes
-    jmp GameLoop
-
-handle_key_input:
-;;    cmp dword ptr [esi+4], sfKeySpace
-    je check_notes
-    jmp GameLoop
-
-EndGame:
-    ; 遊戲結束時顯示最終結果
-;;    call display_results
+@end:
     mov DWORD PTR [currentPage], -1
-    ret
 
-ExitGame:
-    ; 清理資源並退出遊戲
-    push bgMusic
+@exit_program:
+     push bgMusic
     call sfMusic_destroy
     add esp, 4
 
@@ -258,22 +157,28 @@ ExitGame:
     call sfSprite_destroy
     add esp, 4
 
-    push circleSprite
-    call sfSprite_destroy
+    push bgTexture
+    call sfTexture_destroy
+    add esp, 4
+
+    push scoreText
+    call sfText_destroy
+    add esp, 4
+
+    push comboText
+    call sfText_destroy
     add esp, 4
 
     push font
     call sfFont_destroy
-    add esp, 4
+    add esp, 4 
 
-    push window
-    call sfRenderWindow_close
-    add esp, 4
-
-    push window
-    call sfRenderWindow_destroy
+    push circleSprite
+    call sfSprite_destroy
     add esp, 4
 
     ret
+
 main_game_page ENDP
+
 END main_game_page
