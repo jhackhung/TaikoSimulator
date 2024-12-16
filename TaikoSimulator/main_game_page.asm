@@ -2,7 +2,7 @@
 .XMM
 .model flat, c
 include csfml.inc
-include windows.inc
+;include windows.inc
 
 extern currentPage: DWORD
 

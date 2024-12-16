@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 14:23:36
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 15:52:48
 main_game_page.asm					     Page 1 - 1
 
 
@@ -172,19 +172,7 @@ main_game_page.asm					     Page 1 - 1
 			      C 
 			      C EXTERN sfSleep: PROC
 			      C 
-				include windows.inc
-			      C ; windows.inc - 包含 Windows API 函數的定義
-			      C 
-			      C EXTERN CreateFileA:PROC
-			      C EXTERN ReadFile:PROC
-			      C EXTERN CloseHandle:PROC
-			      C 
-			      C ; 定義常量
- = 0x80000000		      C GENERIC_READ      EQU 0x80000000
- = 0x00000001		      C FILE_SHARE_READ   EQU 0x00000001
- = 00000003		      C OPEN_EXISTING     EQU 3
- = 0x00000080		      C FILE_ATTRIBUTE_NORMAL EQU 0x00000080
-			      C 
+				;include windows.inc
 
 				extern currentPage: DWORD
 
@@ -404,7 +392,7 @@ main_game_page.asm					     Page 1 - 1
  00000141			main_game_page ENDP
 
 				END main_game_page
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 14:23:36
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/16/24 15:52:48
 main_game_page.asm					     Symbols 2 - 1
 
 
@@ -490,13 +478,6 @@ Symbols:
 @fardata?  . . . . . . . . . . .	Text   	 FLAT
 @fardata . . . . . . . . . . . .	Text   	 FLAT
 @stack . . . . . . . . . . . . .	Text   	 FLAT
-CloseHandle  . . . . . . . . . .	L Near	 00000000 FLAT	External C
-CreateFileA  . . . . . . . . . .	L Near	 00000000 FLAT	External C
-FILE_ATTRIBUTE_NORMAL  . . . . .	Text   	 0x00000080
-FILE_SHARE_READ  . . . . . . . .	Text   	 0x00000001
-GENERIC_READ . . . . . . . . . .	Text   	 0x80000000
-OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
-ReadFile . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
 bgMusic  . . . . . . . . . . . .	DWord	 00000093 _DATA	
 bgSprite . . . . . . . . . . . .	DWord	 0000007B _DATA	
 bgTexture  . . . . . . . . . . .	DWord	 00000077 _DATA	
