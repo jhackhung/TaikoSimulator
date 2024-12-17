@@ -8,7 +8,7 @@ extern currentPage: DWORD
 
 .data
     ; 檔案路徑
-    bg_path db "assets/main/game_bg.jpg", 0
+    bg_path db "assets/main/bg_genre_2.png", 0
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
 
     selected_music_path db "assets/main/song1.ogg", 0
@@ -47,6 +47,8 @@ extern currentPage: DWORD
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
+    notePosition sfVector2f <700.0, 200.0>  ; 音符的 X 和 Y 座標
+
 .code
 
 ; 載入背景
@@ -75,32 +77,33 @@ extern currentPage: DWORD
 
 ; 載入音符
 @load_note PROC
-    ; 創建音符紋理
+    ; 創建紅色音符紋理
     push 0
     push offset red_note_path
     call sfTexture_createFromFile
     add esp, 8
     mov redNoteTexture, eax
-    
+
     ; 創建音符精靈
     call sfSprite_create
     mov DWORD PTR [noteSprite], eax
-    
-    ; 設定紋理
+
+    ; 設定紅色音符紋理
     push 1
     mov eax, DWORD PTR [redNoteTexture]
     push eax
     mov ecx, DWORD PTR [noteSprite]
     push ecx
-   call sfSprite_setTexture
+    call sfSprite_setTexture
     add esp, 12
 
-    ; 創建位置向量 
-    push 200 ; y 座標
-    push 700  ; x 座標
-    push ecx
-    call sfSprite_setPosition
-    add esp, 12
+    ; 設定位置 (使用 sfVector2f)
+    push dword ptr [notePosition+4] ; y 座標
+    push dword ptr [notePosition]   ; x 座標
+    mov eax, DWORD PTR [noteSprite] ; 精靈指標
+    push eax                       ; 精靈指標
+    call sfSprite_setPosition      ; 設定精靈位置
+    add esp, 12                    ; 清理堆疊
 
     ret
 @load_note ENDP

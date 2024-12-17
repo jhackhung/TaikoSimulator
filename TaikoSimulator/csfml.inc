@@ -118,6 +118,7 @@ EXTERN sfSprite_create:PROC
 EXTERN sfSprite_destroy:PROC
 EXTERN sfSprite_setTexture:PROC
 EXTERN sfSprite_setPosition:PROC
+EXTERN sfSprite_setOrigin:PROC
 
 ; 函數原型 - 音樂相關
 EXTERN sfMusic_createFromFile:PROC

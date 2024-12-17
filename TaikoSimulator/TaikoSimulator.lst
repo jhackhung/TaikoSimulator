@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/17/24 22:21:46
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/18/24 01:10:26
 main_game_page.asm					     Page 1 - 1
 
 
@@ -133,6 +133,7 @@ main_game_page.asm					     Page 1 - 1
 			      C EXTERN sfSprite_destroy:PROC
 			      C EXTERN sfSprite_setTexture:PROC
 			      C EXTERN sfSprite_setPosition:PROC
+			      C EXTERN sfSprite_setOrigin:PROC
 			      C 
 			      C ; 函數原型 - 音樂相關
 			      C EXTERN sfMusic_createFromFile:PROC
@@ -179,12 +180,13 @@ main_game_page.asm					     Page 1 - 1
 
  00000000			.data
 				    ; 檔案路徑
- 00000000 61 73 73 65 74	    bg_path db "assets/main/game_bg.jpg", 0
+ 00000000 61 73 73 65 74	    bg_path db "assets/main/bg_genre_2.png", 0
 	   73 2F 6D 61 69
-	   6E 2F 67 61 6D
-	   65 5F 62 67 2E
-	   6A 70 67 00
- 00000018 61 73 73 65 74	    font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
+	   6E 2F 62 67 5F
+	   67 65 6E 72 65
+	   5F 32 2E 70 6E
+	   67 00
+ 0000001B 61 73 73 65 74	    font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
 	   73 2F 6D 61 69
 	   6E 2F 54 61 69
 	   6B 6F 5F 4E 6F
@@ -195,13 +197,13 @@ main_game_page.asm					     Page 1 - 1
 	   6F 6E 74 2E 74
 	   74 66 00
 
- 00000048 61 73 73 65 74	    selected_music_path db "assets/main/song1.ogg", 0
+ 0000004B 61 73 73 65 74	    selected_music_path db "assets/main/song1.ogg", 0
 	   73 2F 6D 61 69
 	   6E 2F 73 6F 6E
 	   67 31 2E 6F 67
 	   67 00
 				    ;selected_beatmap1_path db "assets/main/beatmap1.tja", 0
- 0000005E 31 30 30 31 32	    selected_beatmap1 db "1001201000102010,1001202000002222,1001201000102000,0000000000112212", 0
+ 00000061 31 30 30 31 32	    selected_beatmap1 db "1001201000102010,1001202000002222,1001201000102000,0000000000112212", 0
 	   30 31 30 30 30
 	   31 30 32 30 31
 	   30 2C 31 30 30
@@ -215,12 +217,12 @@ main_game_page.asm					     Page 1 - 1
 	   30 30 30 30 30
 	   30 31 31 32 32
 	   31 32 00
- 000000A2 61 73 73 65 74	    red_note_path db "assets/main/red_note.png", 0
+ 000000A5 61 73 73 65 74	    red_note_path db "assets/main/red_note.png", 0
 	   73 2F 6D 61 69
 	   6E 2F 72 65 64
 	   5F 6E 6F 74 65
 	   2E 70 6E 67 00
- 000000BB 61 73 73 65 74	    blue_note_path db "assets/main/blue_note.png", 0
+ 000000BE 61 73 73 65 74	    blue_note_path db "assets/main/blue_note.png", 0
 	   73 2F 6D 61 69
 	   6E 2F 62 6C 75
 	   65 5F 6E 6F 74
@@ -228,24 +230,24 @@ main_game_page.asm					     Page 1 - 1
 	   00
 
 				    ; CSFML 物件
- 000000D5 00000000		    bgTexture dd 0               ; 背景紋理
- 000000D9 00000000		    bgSprite dd 0                ; 背景精靈
+ 000000D8 00000000		    bgTexture dd 0               ; 背景紋理
+ 000000DC 00000000		    bgSprite dd 0                ; 背景精靈
 				    ;circleTexture dd 0           ; 圓形音符紋理
 				    ;circleSprite dd 0            ; 圓形音符精靈
- 000000DD 00000000		    redNoteTexture dd 0          ; 紅色音符紋理
- 000000E1 00000000		    blueNoteTexture dd 0         ; 藍色音符紋理
+ 000000E0 00000000		    redNoteTexture dd 0          ; 紅色音符紋理
+ 000000E4 00000000		    blueNoteTexture dd 0         ; 藍色音符紋理
 				    ;noteSprite dd 256 DUP(0)     ; 音符精靈
- 000000E5 00000000		    noteSprite dd 0     ; 音符精靈
- 000000E9 00000000		    font dd 0                    ; 字型
- 000000ED 00000000		    scoreText dd 0               ; 分數文字
- 000000F1 00000000		    comboText dd 0               ; 連擊文字
- 000000F5 00000000		    bgMusic dd 0
+ 000000E8 00000000		    noteSprite dd 0     ; 音符精靈
+ 000000EC 00000000		    font dd 0                    ; 字型
+ 000000F0 00000000		    scoreText dd 0               ; 分數文字
+ 000000F4 00000000		    comboText dd 0               ; 連擊文字
+ 000000F8 00000000		    bgMusic dd 0
 
 				    ; 視窗設定
 				    ;window_videoMode sfVideoMode <1280, 720, 32>
- 000000F9 44A00000		    window_realWidth dd 044a00000r ; 1280.0
+ 000000FC 44A00000		    window_realWidth dd 044a00000r ; 1280.0
 				    ; 事件結構
- 000000FD 00000000		    event sfEvent <>
+ 00000100 00000000		    event sfEvent <>
 	   00000000
 	   00000000
 	   00000000
@@ -259,19 +261,22 @@ main_game_page.asm					     Page 1 - 1
 	   00000000
 
 				    ; 畫面設定
- 0000012D 00000500		    window_videoMode sfVideoMode <1280, 720, 32> ; 視窗大小與格式
+ 00000130 00000500		    window_videoMode sfVideoMode <1280, 720, 32> ; 視窗大小與格式
 	   000002D0
 	   00000020
- 00000139 54 61 69 6B 6F	    windowTitle db "Taiko Simulator", 0          ; 視窗標題
+ 0000013C 54 61 69 6B 6F	    windowTitle db "Taiko Simulator", 0          ; 視窗標題
 	   20 53 69 6D 75
 	   6C 61 74 6F 72
 	   00
- 00000149 40A00000		    scrollSpeed REAL4 5.0        ; 音符滾動速度
- 0000014D 44160000		    laneHeight REAL4 600.0       ; 音符軌道高度
+ 0000014C 40A00000		    scrollSpeed REAL4 5.0        ; 音符滾動速度
+ 00000150 44160000		    laneHeight REAL4 600.0       ; 音符軌道高度
 
 				    ; 顏色常數
- 00000151 FF FF FF FF		    whiteColor sfColor <255, 255, 255, 255> ; 白色
- 00000155 00 00 00 FF		    blackColor sfColor <0, 0, 0, 255>       ; 黑色
+ 00000154 FF FF FF FF		    whiteColor sfColor <255, 255, 255, 255> ; 白色
+ 00000158 00 00 00 FF		    blackColor sfColor <0, 0, 0, 255>       ; 黑色
+
+ 0000015C 442F0000		    notePosition sfVector2f <700.0, 200.0>  ; 音符的 X 和 Y 座標
+	   43480000
 
  00000000			.code
 
@@ -282,17 +287,17 @@ main_game_page.asm					     Page 1 - 1
  00000002  68 00000000 R	    push offset bg_path
  00000007  E8 00000000 E	    call sfTexture_createFromFile
  0000000C  83 C4 08		    add esp, 8
- 0000000F  A3 000000D5 R	    mov bgTexture, eax
+ 0000000F  A3 000000D8 R	    mov bgTexture, eax
 				    
 				    ; 創建背景精靈
  00000014  E8 00000000 E	    call sfSprite_create
- 00000019  A3 000000D9 R	    mov DWORD PTR [bgSprite], eax
+ 00000019  A3 000000DC R	    mov DWORD PTR [bgSprite], eax
 				    
 				    ; 設定紋理
  0000001E  6A 01		    push 1
- 00000020  A1 000000D5 R	    mov eax, DWORD PTR [bgTexture]
+ 00000020  A1 000000D8 R	    mov eax, DWORD PTR [bgTexture]
  00000025  50			    push eax
- 00000026  8B 0D 000000D9 R	    mov ecx, DWORD PTR [bgSprite]
+ 00000026  8B 0D 000000DC R	    mov ecx, DWORD PTR [bgSprite]
  0000002C  51			    push ecx
  0000002D  E8 00000000 E	   call sfSprite_setTexture
  00000032  83 C4 0C		    add esp, 12
@@ -301,181 +306,182 @@ main_game_page.asm					     Page 1 - 1
 
 				; 載入音符
  00000036			@load_note PROC
-				    ; 創建音符紋理
+				    ; 創建紅色音符紋理
  00000036  6A 00		    push 0
- 00000038  68 000000A2 R	    push offset red_note_path
+ 00000038  68 000000A5 R	    push offset red_note_path
  0000003D  E8 00000000 E	    call sfTexture_createFromFile
  00000042  83 C4 08		    add esp, 8
- 00000045  A3 000000DD R	    mov redNoteTexture, eax
-				    
+ 00000045  A3 000000E0 R	    mov redNoteTexture, eax
+
 				    ; 創建音符精靈
  0000004A  E8 00000000 E	    call sfSprite_create
- 0000004F  A3 000000E5 R	    mov DWORD PTR [noteSprite], eax
-				    
-				    ; 設定紋理
+ 0000004F  A3 000000E8 R	    mov DWORD PTR [noteSprite], eax
+
+				    ; 設定紅色音符紋理
  00000054  6A 01		    push 1
- 00000056  A1 000000DD R	    mov eax, DWORD PTR [redNoteTexture]
+ 00000056  A1 000000E0 R	    mov eax, DWORD PTR [redNoteTexture]
  0000005B  50			    push eax
- 0000005C  8B 0D 000000E5 R	    mov ecx, DWORD PTR [noteSprite]
+ 0000005C  8B 0D 000000E8 R	    mov ecx, DWORD PTR [noteSprite]
  00000062  51			    push ecx
- 00000063  E8 00000000 E	   call sfSprite_setTexture
+ 00000063  E8 00000000 E	    call sfSprite_setTexture
  00000068  83 C4 0C		    add esp, 12
 
-				    ; 創建位置向量 
- 0000006B  68 000000C8		    push 200 ; y 座標
- 00000070  68 000002BC		    push 700  ; x 座標
- 00000075  51			    push ecx
- 00000076  E8 00000000 E	    call sfSprite_setPosition
- 0000007B  83 C4 0C		    add esp, 12
+				    ; 設定位置 (使用 sfVector2f)
+ 0000006B  FF 35 00000160 R	    push dword ptr [notePosition+4] ; y 座標
+ 00000071  FF 35 0000015C R	    push dword ptr [notePosition]   ; x 座標
+ 00000077  A1 000000E8 R	    mov eax, DWORD PTR [noteSprite] ; 精靈指標
+ 0000007C  50			    push eax                       ; 精靈指標
+ 0000007D  E8 00000000 E	    call sfSprite_setPosition      ; 設定精靈位置
+ 00000082  83 C4 0C		    add esp, 12                    ; 清理堆疊
 
- 0000007E  C3			    ret
- 0000007F			@load_note ENDP
+ 00000085  C3			    ret
+ 00000086			@load_note ENDP
 
 
- 0000007F			game_play_music PROC
- 0000007F  68 00000048 R	    push offset selected_music_path
- 00000084  E8 00000000 E	    call sfMusic_createFromFile
- 00000089  83 C4 04		    add esp, 4 
- 0000008C  A3 000000F5 R	    mov bgMusic, eax
+ 00000086			game_play_music PROC
+ 00000086  68 0000004B R	    push offset selected_music_path
+ 0000008B  E8 00000000 E	    call sfMusic_createFromFile
+ 00000090  83 C4 04		    add esp, 4 
+ 00000093  A3 000000F8 R	    mov bgMusic, eax
 
- 00000091  50			    push eax
- 00000092  E8 00000000 E	    call sfMusic_play
- 00000097  83 C4 04		    add esp, 4
- 0000009A  C3			    ret
- 0000009B			game_play_music ENDP
+ 00000098  50			    push eax
+ 00000099  E8 00000000 E	    call sfMusic_play
+ 0000009E  83 C4 04		    add esp, 4
+ 000000A1  C3			    ret
+ 000000A2			game_play_music ENDP
 
- 0000009B			main_game_page PROC window:DWORD
+ 000000A2			main_game_page PROC window:DWORD
 
 				   ; 載入背景
- 0000009E  E8 FFFFFF5D		    call @load_bg
- 000000A3  85 C0		    test eax, eax
- 000000A5  0F 84 0000009B	    jz @exit_program
+ 000000A5  E8 FFFFFF56		    call @load_bg
+ 000000AA  85 C0		    test eax, eax
+ 000000AC  0F 84 0000009B	    jz @exit_program
 
 				    ; 載入音符
- 000000AB  E8 FFFFFF86		    call @load_note
- 000000B0  85 C0		    test eax, eax
- 000000B2  0F 84 0000008E	    jz @exit_program
+ 000000B2  E8 FFFFFF7F		    call @load_note
+ 000000B7  85 C0		    test eax, eax
+ 000000B9  0F 84 0000008E	    jz @exit_program
 				    
 				    ;mov bgMusic, 0
- 000000B8  E8 FFFFFFC2		    call game_play_music
+ 000000BF  E8 FFFFFFC2		    call game_play_music
 
- 000000BD			@main_loop:
+ 000000C4			@main_loop:
 				    
- 000000BD  8B 45 08		    mov eax, DWORD PTR [window]
- 000000C0  50			    push eax
- 000000C1  E8 00000000 E	    call sfRenderWindow_isOpen
- 000000C6  83 C4 04		    add esp, 4
- 000000C9  85 C0		    test eax, eax
- 000000CB  74 79		    je @exit_program
+ 000000C4  8B 45 08		    mov eax, DWORD PTR [window]
+ 000000C7  50			    push eax
+ 000000C8  E8 00000000 E	    call sfRenderWindow_isOpen
+ 000000CD  83 C4 04		    add esp, 4
+ 000000D0  85 C0		    test eax, eax
+ 000000D2  74 79		    je @exit_program
 
- 000000CD			    @event_loop:
+ 000000D4			    @event_loop:
 				        ; 事件處理
- 000000CD  8D 35 000000FD R	        lea esi, event
- 000000D3  56			        push esi
- 000000D4  8B 45 08		        mov eax, window
- 000000D7  50			        push eax
- 000000D8  E8 00000000 E	        call sfRenderWindow_pollEvent
- 000000DD  83 C4 08		        add esp, 8
- 000000E0  85 C0		        test eax, eax
- 000000E2  74 11		        je @render_window
+ 000000D4  8D 35 00000100 R	        lea esi, event
+ 000000DA  56			        push esi
+ 000000DB  8B 45 08		        mov eax, window
+ 000000DE  50			        push eax
+ 000000DF  E8 00000000 E	        call sfRenderWindow_pollEvent
+ 000000E4  83 C4 08		        add esp, 8
+ 000000E7  85 C0		        test eax, eax
+ 000000E9  74 11		        je @render_window
 				    
 				        ; 檢查關閉事件
- 000000E4  83 3E 00		        cmp dword ptr [esi].sfEvent._type, sfEvtClosed
- 000000E7  74 53		        je @end
+ 000000EB  83 3E 00		        cmp dword ptr [esi].sfEvent._type, sfEvtClosed
+ 000000EE  74 53		        je @end
 
 				        ; 檢查滑鼠點擊
- 000000E9  83 3E 09		        cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
- 000000EC  74 07		        je @render_window
+ 000000F0  83 3E 09		        cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
+ 000000F3  74 07		        je @render_window
 
 				        ; 檢查按鍵事件 (按下空白鍵模擬音符判定)
- 000000EE  83 3E 05		        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
- 000000F1  74 49		        je @end
+ 000000F5  83 3E 05		        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
+ 000000F8  74 49		        je @end
 
- 000000F3  EB D8		        jmp @event_loop
+ 000000FA  EB D8		        jmp @event_loop
 				    
- 000000F5			@render_window: 
+ 000000FC			@render_window: 
 				    ; 清除視窗
- 000000F5  FF 35 00000155 R	    push blackColor
- 000000FB  FF 75 08		    push window
- 000000FE  E8 00000000 E	    call sfRenderWindow_clear
- 00000103  83 C4 08		    add esp, 8
+ 000000FC  FF 35 00000158 R	    push blackColor
+ 00000102  FF 75 08		    push window
+ 00000105  E8 00000000 E	    call sfRenderWindow_clear
+ 0000010A  83 C4 08		    add esp, 8
 				    
 				    ; 繪製背景
- 00000106  6A 00		    push 0
- 00000108  A1 000000D9 R	    mov eax, DWORD PTR [bgSprite]
- 0000010D  50			    push eax
- 0000010E  8B 4D 08		    mov ecx, DWORD PTR [window]
- 00000111  51			    push ecx
- 00000112  E8 00000000 E	    call sfRenderWindow_drawSprite
- 00000117  83 C4 0C		    add esp, 12
+ 0000010D  6A 00		    push 0
+ 0000010F  A1 000000DC R	    mov eax, DWORD PTR [bgSprite]
+ 00000114  50			    push eax
+ 00000115  8B 4D 08		    mov ecx, DWORD PTR [window]
+ 00000118  51			    push ecx
+ 00000119  E8 00000000 E	    call sfRenderWindow_drawSprite
+ 0000011E  83 C4 0C		    add esp, 12
 
- 0000011A  6A 00		    push 0
- 0000011C  A1 000000E5 R	    mov eax, DWORD PTR [noteSprite]
- 00000121  50			    push eax
- 00000122  8B 4D 08		    mov ecx, DWORD PTR [window]
- 00000125  51			    push ecx
- 00000126  E8 00000000 E	    call sfRenderWindow_drawSprite
- 0000012B  83 C4 0C		    add esp, 12
+ 00000121  6A 00		    push 0
+ 00000123  A1 000000E8 R	    mov eax, DWORD PTR [noteSprite]
+ 00000128  50			    push eax
+ 00000129  8B 4D 08		    mov ecx, DWORD PTR [window]
+ 0000012C  51			    push ecx
+ 0000012D  E8 00000000 E	    call sfRenderWindow_drawSprite
+ 00000132  83 C4 0C		    add esp, 12
 
 				    ; 顯示視窗
- 0000012E  8B 45 08		    mov eax, DWORD PTR [window]
- 00000131  50			    push eax
- 00000132  E8 00000000 E	    call sfRenderWindow_display
- 00000137  83 C4 04		    add esp, 4
+ 00000135  8B 45 08		    mov eax, DWORD PTR [window]
+ 00000138  50			    push eax
+ 00000139  E8 00000000 E	    call sfRenderWindow_display
+ 0000013E  83 C4 04		    add esp, 4
 
- 0000013A  EB 81		    jmp @main_loop
+ 00000141  EB 81		    jmp @main_loop
 
- 0000013C			@end:
- 0000013C  C7 05 00000000 E	    mov DWORD PTR [currentPage], -1
+ 00000143			@end:
+ 00000143  C7 05 00000000 E	    mov DWORD PTR [currentPage], -1
 	   FFFFFFFF
 
- 00000146			@exit_program:
- 00000146  FF 35 000000F5 R	     push bgMusic
- 0000014C  E8 00000000 E	    call sfMusic_destroy
- 00000151  83 C4 04		    add esp, 4
+ 0000014D			@exit_program:
+ 0000014D  FF 35 000000F8 R	     push bgMusic
+ 00000153  E8 00000000 E	    call sfMusic_destroy
+ 00000158  83 C4 04		    add esp, 4
 
- 00000154  FF 35 000000D9 R	    push bgSprite
- 0000015A  E8 00000000 E	    call sfSprite_destroy
- 0000015F  83 C4 04		    add esp, 4
+ 0000015B  FF 35 000000DC R	    push bgSprite
+ 00000161  E8 00000000 E	    call sfSprite_destroy
+ 00000166  83 C4 04		    add esp, 4
 
- 00000162  FF 35 000000D5 R	    push bgTexture
- 00000168  E8 00000000 E	    call sfTexture_destroy
- 0000016D  83 C4 04		    add esp, 4
+ 00000169  FF 35 000000D8 R	    push bgTexture
+ 0000016F  E8 00000000 E	    call sfTexture_destroy
+ 00000174  83 C4 04		    add esp, 4
 
- 00000170  FF 35 000000ED R	    push scoreText
- 00000176  E8 00000000 E	    call sfText_destroy
- 0000017B  83 C4 04		    add esp, 4
+ 00000177  FF 35 000000F0 R	    push scoreText
+ 0000017D  E8 00000000 E	    call sfText_destroy
+ 00000182  83 C4 04		    add esp, 4
 
- 0000017E  FF 35 000000F1 R	    push comboText
- 00000184  E8 00000000 E	    call sfText_destroy
- 00000189  83 C4 04		    add esp, 4
+ 00000185  FF 35 000000F4 R	    push comboText
+ 0000018B  E8 00000000 E	    call sfText_destroy
+ 00000190  83 C4 04		    add esp, 4
 
- 0000018C  FF 35 000000E9 R	    push font
- 00000192  E8 00000000 E	    call sfFont_destroy
- 00000197  83 C4 04		    add esp, 4 
+ 00000193  FF 35 000000EC R	    push font
+ 00000199  E8 00000000 E	    call sfFont_destroy
+ 0000019E  83 C4 04		    add esp, 4 
 
 				    ;push circleSprite
 				    ;call sfSprite_destroy
 				    ;add esp, 4
 
- 0000019A  FF 35 000000E1 R	    push blueNoteTexture
- 000001A0  E8 00000000 E	    call sfTexture_destroy
- 000001A5  83 C4 04		    add esp, 4
+ 000001A1  FF 35 000000E4 R	    push blueNoteTexture
+ 000001A7  E8 00000000 E	    call sfTexture_destroy
+ 000001AC  83 C4 04		    add esp, 4
 
- 000001A8  FF 35 000000DD R	    push redNoteTexture
- 000001AE  E8 00000000 E	    call sfTexture_destroy
- 000001B3  83 C4 04		    add esp, 4
+ 000001AF  FF 35 000000E0 R	    push redNoteTexture
+ 000001B5  E8 00000000 E	    call sfTexture_destroy
+ 000001BA  83 C4 04		    add esp, 4
 
- 000001B6  FF 35 000000E5 R	    push NoteSprite
- 000001BC  E8 00000000 E	    call sfTexture_destroy
- 000001C1  83 C4 04		    add esp, 4
+ 000001BD  FF 35 000000E8 R	    push NoteSprite
+ 000001C3  E8 00000000 E	    call sfTexture_destroy
+ 000001C8  83 C4 04		    add esp, 4
 
 				    ret
 
- 000001C6			main_game_page ENDP
+ 000001CD			main_game_page ENDP
 
 				END main_game_page
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/17/24 22:21:46
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/18/24 01:10:26
 main_game_page.asm					     Symbols 2 - 1
 
 
@@ -529,8 +535,8 @@ Segments and Groups:
                 N a m e                 Size     Length   Align   Combine Class
 
 FLAT . . . . . . . . . . . . . .	GROUP
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000159 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 000001C6 Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000164 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000001CD Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -538,15 +544,15 @@ Procedures, parameters, and locals:
                 N a m e                 Type     Value    Attr
 
 @load_bg . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000036 Public C
-@load_note . . . . . . . . . . .	P Near	 00000036 _TEXT	Length= 00000049 Public C
-game_play_music  . . . . . . . .	P Near	 0000007F _TEXT	Length= 0000001C Public C
-main_game_page . . . . . . . . .	P Near	 0000009B _TEXT	Length= 0000012B Public C
+@load_note . . . . . . . . . . .	P Near	 00000036 _TEXT	Length= 00000050 Public C
+game_play_music  . . . . . . . .	P Near	 00000086 _TEXT	Length= 0000001C Public C
+main_game_page . . . . . . . . .	P Near	 000000A2 _TEXT	Length= 0000012B Public C
   window . . . . . . . . . . . .	DWord	 bp + 00000008
-  @main_loop . . . . . . . . . .	L Near	 000000BD _TEXT	
-  @event_loop  . . . . . . . . .	L Near	 000000CD _TEXT	
-  @render_window . . . . . . . .	L Near	 000000F5 _TEXT	
-  @end . . . . . . . . . . . . .	L Near	 0000013C _TEXT	
-  @exit_program  . . . . . . . .	L Near	 00000146 _TEXT	
+  @main_loop . . . . . . . . . .	L Near	 000000C4 _TEXT	
+  @event_loop  . . . . . . . . .	L Near	 000000D4 _TEXT	
+  @render_window . . . . . . . .	L Near	 000000FC _TEXT	
+  @end . . . . . . . . . . . . .	L Near	 00000143 _TEXT	
+  @exit_program  . . . . . . . .	L Near	 0000014D _TEXT	
 
 
 Symbols:
@@ -562,26 +568,27 @@ Symbols:
 @fardata?  . . . . . . . . . . .	Text   	 FLAT
 @fardata . . . . . . . . . . . .	Text   	 FLAT
 @stack . . . . . . . . . . . . .	Text   	 FLAT
-bgMusic  . . . . . . . . . . . .	DWord	 000000F5 _DATA	
-bgSprite . . . . . . . . . . . .	DWord	 000000D9 _DATA	
-bgTexture  . . . . . . . . . . .	DWord	 000000D5 _DATA	
+bgMusic  . . . . . . . . . . . .	DWord	 000000F8 _DATA	
+bgSprite . . . . . . . . . . . .	DWord	 000000DC _DATA	
+bgTexture  . . . . . . . . . . .	DWord	 000000D8 _DATA	
 bg_path  . . . . . . . . . . . .	Byte	 00000000 _DATA	
-blackColor . . . . . . . . . . .	sfColor	 00000155 _DATA	
-blueNoteTexture  . . . . . . . .	DWord	 000000E1 _DATA	
-blue_note_path . . . . . . . . .	Byte	 000000BB _DATA	
-comboText  . . . . . . . . . . .	DWord	 000000F1 _DATA	
+blackColor . . . . . . . . . . .	sfColor	 00000158 _DATA	
+blueNoteTexture  . . . . . . . .	DWord	 000000E4 _DATA	
+blue_note_path . . . . . . . . .	Byte	 000000BE _DATA	
+comboText  . . . . . . . . . . .	DWord	 000000F4 _DATA	
 currentPage  . . . . . . . . . .	DWord	 00000000 FLAT	External C
-event  . . . . . . . . . . . . .	sfEvent	 000000FD _DATA	
-font_path  . . . . . . . . . . .	Byte	 00000018 _DATA	
-font . . . . . . . . . . . . . .	DWord	 000000E9 _DATA	
-laneHeight . . . . . . . . . . .	DWord	 0000014D _DATA	
-noteSprite . . . . . . . . . . .	DWord	 000000E5 _DATA	
-redNoteTexture . . . . . . . . .	DWord	 000000DD _DATA	
-red_note_path  . . . . . . . . .	Byte	 000000A2 _DATA	
-scoreText  . . . . . . . . . . .	DWord	 000000ED _DATA	
-scrollSpeed  . . . . . . . . . .	DWord	 00000149 _DATA	
-selected_beatmap1  . . . . . . .	Byte	 0000005E _DATA	
-selected_music_path  . . . . . .	Byte	 00000048 _DATA	
+event  . . . . . . . . . . . . .	sfEvent	 00000100 _DATA	
+font_path  . . . . . . . . . . .	Byte	 0000001B _DATA	
+font . . . . . . . . . . . . . .	DWord	 000000EC _DATA	
+laneHeight . . . . . . . . . . .	DWord	 00000150 _DATA	
+notePosition . . . . . . . . . .	sfVector2f  0000015C _DATA	
+noteSprite . . . . . . . . . . .	DWord	 000000E8 _DATA	
+redNoteTexture . . . . . . . . .	DWord	 000000E0 _DATA	
+red_note_path  . . . . . . . . .	Byte	 000000A5 _DATA	
+scoreText  . . . . . . . . . . .	DWord	 000000F0 _DATA	
+scrollSpeed  . . . . . . . . . .	DWord	 0000014C _DATA	
+selected_beatmap1  . . . . . . .	Byte	 00000061 _DATA	
+selected_music_path  . . . . . .	Byte	 0000004B _DATA	
 sfClose  . . . . . . . . . . . .	Number	 00000004h   
 sfColor_fromRGBA . . . . . . . .	L Near	 00000000 FLAT	External C
 sfColor_fromRGB  . . . . . . . .	L Near	 00000000 FLAT	External C
@@ -639,6 +646,7 @@ sfResize . . . . . . . . . . . .	Number	 00000002h
 sfSleep  . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
 sfSprite_create  . . . . . . . .	L Near	 00000000 FLAT	External C
 sfSprite_destroy . . . . . . . .	L Near	 00000000 FLAT	External C
+sfSprite_setOrigin . . . . . . .	L Near	 00000000 FLAT	External C
 sfSprite_setPosition . . . . . .	L Near	 00000000 FLAT	External C
 sfSprite_setTexture  . . . . . .	L Near	 00000000 FLAT	External C
 sfText_create  . . . . . . . . .	L Near	 00000000 FLAT	External C
@@ -656,10 +664,10 @@ sfTexture_createFromFile . . . .	L Near	 00000000 FLAT	External C
 sfTexture_destroy  . . . . . . .	L Near	 00000000 FLAT	External C
 sfTitlebar . . . . . . . . . . .	Number	 00000001h   
 sfTrue . . . . . . . . . . . . .	Number	 00000001h   
-whiteColor . . . . . . . . . . .	sfColor	 00000151 _DATA	
-windowTitle  . . . . . . . . . .	Byte	 00000139 _DATA	
-window_realWidth . . . . . . . .	DWord	 000000F9 _DATA	
-window_videoMode . . . . . . . .	sfVideoMode  0000012D _DATA	
+whiteColor . . . . . . . . . . .	sfColor	 00000154 _DATA	
+windowTitle  . . . . . . . . . .	Byte	 0000013C _DATA	
+window_realWidth . . . . . . . .	DWord	 000000FC _DATA	
+window_videoMode . . . . . . . .	sfVideoMode  00000130 _DATA	
 
 	   0 Warnings
 	   0 Errors
