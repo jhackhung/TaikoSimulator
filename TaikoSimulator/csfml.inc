@@ -36,6 +36,7 @@ sfKeyEnter    equ 58
 sfKeyA        equ 0
 sfKeyS        equ 18
 sfKeyD        equ 3
+sfKeyEscape   equ 36
 
 ; 視窗風格定義
 sfNone       equ 0
@@ -116,6 +117,7 @@ EXTERN sfTexture_destroy:PROC
 EXTERN sfSprite_create:PROC
 EXTERN sfSprite_destroy:PROC
 EXTERN sfSprite_setTexture:PROC
+EXTERN sfSprite_setPosition:PROC
 
 ; 函數原型 - 音樂相關
 EXTERN sfMusic_createFromFile:PROC
@@ -153,3 +155,5 @@ EXTERN sfRectangleShape_setOutlineThickness: PROC
 EXTERN sfRenderWindow_drawRectangleShape: PROC
 EXTERN sfRectangleShape_destroy: PROC
 EXTERN sfRectangleShape_setOutlineColor: PROC
+
+EXTERN sfSleep: PROC

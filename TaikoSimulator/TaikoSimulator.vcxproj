@@ -155,6 +155,7 @@
   <ItemGroup>
     <MASM Include="end_game_page.asm" />
     <MASM Include="main.asm" />
+    <MASM Include="main_game_page.asm" />
     <MASM Include="main_page.asm" />
     <MASM Include="select_music_page.asm" />
   </ItemGroup>

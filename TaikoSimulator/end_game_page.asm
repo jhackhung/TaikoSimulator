@@ -7,7 +7,7 @@ include csfml.inc
 extern currentPage: DWORD
 
 .data
-    musicPath db "assets/never-gonna-give-you-up-official-music-video.mp3", 0   ; 音樂檔案路徑
+    ;musicPath db "assets/never-gonna-give-you-up-official-music-video.mp3", 0   ; 音樂檔案路徑
     ; 修改結構體初始化，正確給定每個成員
 
     bgMusic dd 0
@@ -16,8 +16,8 @@ extern currentPage: DWORD
 
 .code
 
-end_play_music PROC
-    push offset musicPath
+end_play_music PROC imusicp:DWORD
+    push imusicp
     call sfMusic_createFromFile
     add esp, 4 
     mov bgMusic, eax
@@ -29,8 +29,8 @@ end_play_music PROC
 end_play_music ENDP
 
 
-end_game_page PROC window:DWORD
-   
+end_game_page PROC window:DWORD, imusicp:DWORD
+   push imusicp
    call end_play_music
 
     ; 主迴圈
@@ -57,7 +57,14 @@ end_game_page PROC window:DWORD
         cmp dword ptr [esi].sfEvent._type, sfEvtClosed
         je @end
 
+        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
+        je @check_key
+
         jmp @event_loop
+
+        @check_key:
+            cmp dword ptr [esi+4], sfKeyEscape
+            je @end
     
     @render_window:
 

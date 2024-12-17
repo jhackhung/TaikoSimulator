@@ -15,11 +15,18 @@ Button ENDS
 
 .data
     ; 檔案路徑
-    music1_path db "assets/main/song1.ogg", 0
+    ;music1_path db "assets/main/song1.ogg", 0
+    music1_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
+
     music2_path db "assets/main/song2.ogg", 0
     music3_path db "assets/main/song3.ogg", 0
     bg_path db "assets/main/song_select_bg.jpg", 0
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
+
+    selected_music_path db "assets/main/song1.ogg", 0
+    selected_beatmap1_path db "assets/main/beatmap1.ogg", 0
+
+    beatmap1_path db "assets/main/beatmap1.ogg", 0
    
     ; 提示文字
     song1_string db "Song 1", 0
@@ -831,15 +838,18 @@ select_music_page PROC window:DWORD
     jne @event_loop              
 
 @keyA_enter:
-    mov DWORD PTR [currentPage], 0
+    mov DWORD PTR [currentPage], 3
+    mov ebx, offset music1_path
     jmp @exit_program
 
 @keyS_enter:
-    mov DWORD PTR [currentPage], 0
+    mov DWORD PTR [currentPage], 2
+    mov ebx, offset music2_path
     jmp @exit_program
 
 @keyD_enter:
-    mov DWORD PTR [currentPage], 0
+    mov DWORD PTR [currentPage], 2
+    mov ebx, offset music3_path
     jmp @exit_program
     
 @render_window: 
