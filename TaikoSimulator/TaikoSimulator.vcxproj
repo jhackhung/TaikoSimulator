@@ -82,10 +82,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir);C:\Users\User\source\repos\TaikoSimulator\Debug\;%(AdditionalLibraryDirectories);C:\Irvine</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Irvine32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);csfml-graphics.lib
-;csfml-window.lib
-;csfml-system.lib;csfml-audio.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir);C:\Users\User\source\repos\TaikoSimulator\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);csfml-graphics.lib;csfml-window.lib;csfml-system.lib;csfml-audio.lib</AdditionalDependencies>
       <GenerateMapFile>true</GenerateMapFile>
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>

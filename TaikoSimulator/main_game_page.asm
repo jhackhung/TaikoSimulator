@@ -9,6 +9,9 @@ extern currentPage: DWORD
     red_note_path db "assets/main/red_note.png", 0
     blue_note_path db "assets/main/blue_note.png", 0
 
+    selected_music_path db "assets/main/song1.ogg", 0
+    selected_beatmap_path db "assets/main/song1.tja", 0
+
     ; CSFML 物件
     bgTexture dd 0
     bgSprite dd 0
@@ -16,6 +19,7 @@ extern currentPage: DWORD
     blueNoteTexture dd 0
     noteSprites dd 256 DUP(0) ; 最多支援 256 個音符精靈
     noteCount dd 0            ; 當前音符數量
+    bgmusic dd 0
 
     ; 計時器
     clock dd 0
@@ -25,7 +29,7 @@ extern currentPage: DWORD
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
     windowTitle db "Taiko Simulator", 0
-    scrollSpeed REAL4 -0.5      ; 音符滾動速度 (向左移動)
+    scrollSpeed REAL4 -0.05      ; 音符滾動速度 (向左移動)
 
     ; 顏色常數
     whiteColor sfColor <255, 255, 255, 255> ; 白色
@@ -35,6 +39,17 @@ extern currentPage: DWORD
     movePosition sfVector2f <-0.1, 0.0>
 
 .code
+game_play_music PROC
+    push offset selected_music_path
+    call sfMusic_createFromFile
+    add esp, 4 
+    mov bgMusic, eax
+
+    push eax
+    call sfMusic_play
+    add esp, 4
+    ret
+game_play_music ENDP
 
 ; 載入背景
 @load_bg PROC
@@ -181,6 +196,9 @@ main_game_page PROC window:DWORD
     call @load_bg
     test eax, eax
     jz @exit_program
+
+    ; 播放音樂
+    call game_play_music
 
     ; 載入音符
     call @load_notes
