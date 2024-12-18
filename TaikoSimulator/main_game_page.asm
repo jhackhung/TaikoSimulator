@@ -1,16 +1,33 @@
+.686P
+.XMM
 .model flat, c
 include csfml.inc
+include windows.inc
+includelib kernel32.lib
+includelib msvcrt.lib
+
+
 
 extern currentPage: DWORD
+extern GetStdHandle@4:PROC
+extern CreateFileA@28:PROC
+extern WriteFile@20:PROC
+extern ReadFile@20:PROC
+extern ExitProcess@4:PROC
+extern CloseHandle@4:PROC
+extern WriteConsoleA@20:PROC
+extern GetLastError@0:PROC
 
 .data
+
+
     ; 檔案路徑
     bg_path db "assets/main/bg_genre_2.png", 0
     red_note_path db "assets/main/red_note.png", 0
     blue_note_path db "assets/main/blue_note.png", 0
 
-    selected_music_path db "assets/main/song1.ogg", 0
-    selected_beatmap_path db "assets/main/song1.tja", 0
+    selectedMusicPath db "assets/main/song1.ogg", 0
+    selectedBeatmapPath db "assets/main/song1.tja", 0
 
     ; CSFML 物件
     bgTexture dd 0
@@ -24,7 +41,7 @@ extern currentPage: DWORD
     ; 計時器
     clock dd 0
     note_timer REAL4 0.0       ; 音符生成計時器
-    note_interval REAL4 10.0    ; 每 1 秒生成一個音符
+    note_interval REAL4 100.0    ; 每 1 秒生成一個音符
 
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
@@ -35,12 +52,20 @@ extern currentPage: DWORD
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
+    ; Note and Beatmap Processing
     notePosition sfVector2f <1200.0, 200.0>  ; 音符的 X 和 Y 座標
     movePosition sfVector2f <-0.1, 0.0>
+    notes db 256 DUP(0)
+    totalNotes dd 0
+    bpm REAL4 113.65
+    noteSpawnInterval REAL4 0.0
+    lineBuffer db 256 DUP(0)
+    startTag db "#START", 0
+    endTag db "#END", 0
 
 .code
 game_play_music PROC
-    push offset selected_music_path
+    push offset selectedMusicPath
     call sfMusic_createFromFile
     add esp, 4 
     mov bgMusic, eax
@@ -82,6 +107,10 @@ game_play_music ENDP
     mov eax, 0
     ret
 @load_bg ENDP
+
+
+
+
 
 ; 載入音符
 @load_notes PROC
