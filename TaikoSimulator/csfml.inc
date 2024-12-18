@@ -159,3 +159,8 @@ EXTERN sfRectangleShape_destroy: PROC
 EXTERN sfRectangleShape_setOutlineColor: PROC
 
 EXTERN sfSleep: PROC
+
+EXTERN sfClock_create:PROC
+EXTERN sfClock_getElapsedTime:PROC
+EXTERN sfClock_restart:PROC
+EXTERN sfClock_destroy:PROC
