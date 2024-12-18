@@ -47,7 +47,8 @@ extern currentPage: DWORD
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
-    notePosition sfVector2f <700.0, 200.0>  ; 音符的 X 和 Y 座標
+    notePosition sfVector2f <1200.0, 200.0>  ; 音符的 X 和 Y 座標
+    movePosition sfVector2f <-0.1, 0.0>
 
 .code
 
@@ -76,7 +77,7 @@ extern currentPage: DWORD
 @load_bg ENDP
 
 ; 載入音符
-@load_note PROC
+@load_notes PROC
     ; 創建紅色音符紋理
     push 0
     push offset red_note_path
@@ -97,16 +98,25 @@ extern currentPage: DWORD
     call sfSprite_setTexture
     add esp, 12
 
-    ; 設定位置 (使用 sfVector2f)
+    ; 設定位置 
     push dword ptr [notePosition+4] ; y 座標
     push dword ptr [notePosition]   ; x 座標
-    mov eax, DWORD PTR [noteSprite] ; 精靈指標
-    push eax                       ; 精靈指標
-    call sfSprite_setPosition      ; 設定精靈位置
-    add esp, 12                    ; 清理堆疊
-
+    mov eax, DWORD PTR [noteSprite] 
+    push eax                       
+    call sfSprite_setPosition      
+    add esp, 12                    
     ret
-@load_note ENDP
+@load_notes ENDP
+
+update_notes PROC
+    push dword ptr [movePosition+4] ; y 座標
+    push dword ptr [movePosition]   ; x 座標
+    mov eax, DWORD PTR [noteSprite] 
+    push eax                       
+    call sfSprite_move     
+    add esp, 12
+    ret
+update_notes ENDP
 
 
 game_play_music PROC
@@ -129,9 +139,10 @@ main_game_page PROC window:DWORD
     jz @exit_program
 
     ; 載入音符
-    call @load_note
+    call @load_notes
     test eax, eax
     jz @exit_program
+
     
     ;mov bgMusic, 0
     call game_play_music
@@ -144,6 +155,8 @@ main_game_page PROC window:DWORD
     add esp, 4
     test eax, eax
     je @exit_program
+
+    call update_notes
 
     @event_loop:
         ; 事件處理
