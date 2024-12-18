@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/18/24 15:21:17
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/18/24 23:46:18
 main_game_page.asm					     Page 1 - 1
 
 
@@ -111,6 +111,10 @@ main_game_page.asm					     Page 1 - 1
 	   00000000
 			      C sfEvent ENDS
 			      C 
+ 00000004		      C sfTime STRUCT
+ 00000000  00000000	      C     microseconds DWORD ?    
+			      C sfTime ENDS
+			      C 
 			      C ; 函數原型 - 視窗相關
 			      C EXTERN sfRenderWindow_create:PROC
 			      C EXTERN sfRenderWindow_destroy:PROC
@@ -214,7 +218,7 @@ main_game_page.asm					     Page 1 - 1
 				    ; 計時器
  00000462 00000000		    clock dd 0
  00000466 00000000		    note_timer REAL4 0.0       ; 音符生成計時器
- 0000046A 41200000		    note_interval REAL4 10.0    ; 每 1 秒生成一個音符
+ 0000046A 3F800000		    note_interval REAL4 1.0    ; 每 1 秒生成一個音符
 
 				    ; 視窗設定
  0000046E 00000500		    window_videoMode sfVideoMode <1280, 720, 32>
@@ -386,133 +390,129 @@ main_game_page.asm					     Page 1 - 1
 				    ; 載入背景
  00000113  E8 FFFFFEE8		    call @load_bg
  00000118  85 C0		    test eax, eax
- 0000011A  0F 84 000000E3	    jz @exit_program
+ 0000011A  0F 84 000000CF	    jz @exit_program
 
 				    ; 載入音符
  00000120  E8 FFFFFF1F		    call @load_notes
  00000125  85 C0		    test eax, eax
- 00000127  0F 84 000000D6	    jz @exit_program
+ 00000127  0F 84 000000C2	    jz @exit_program
 
 				    ; 初始化計時器
  0000012D  E8 00000000 E	    call sfClock_create
  00000132  85 C0		    test eax, eax
- 00000134  0F 84 000000C9	    jz @exit_program
+ 00000134  0F 84 000000B5	    jz @exit_program
  0000013A  A3 00000462 R	    mov clock, eax
 
 				    ; 設置音符生成間隔開始時間
- 0000013F  F3/ 0F 11 05		    movss note_timer, xmm0
-	   00000466 R
+				    ;movss note_timer, xmm0
 
- 00000147			@main_loop:
+ 0000013F			@main_loop:
 				    ; 檢查視窗是否開啟
- 00000147  8B 45 08		    mov eax, window
- 0000014A  50			    push eax
- 0000014B  E8 00000000 E	    call sfRenderWindow_isOpen
- 00000150  83 C4 04		    add esp, 4
- 00000153  85 C0		    test eax, eax
- 00000155  0F 84 000000A8	    je @exit_program
+ 0000013F  8B 45 08		    mov eax, window
+ 00000142  50			    push eax
+ 00000143  E8 00000000 E	    call sfRenderWindow_isOpen
+ 00000148  83 C4 04		    add esp, 4
+ 0000014B  85 C0		    test eax, eax
+ 0000014D  0F 84 0000009C	    je @exit_program
 
 				    ; 更新計時器
- 0000015B  A1 00000462 R	    mov eax, clock
- 00000160  50			    push eax
- 00000161  E8 00000000 E	    call sfClock_getElapsedTime
- 00000166  83 C4 04		    add esp, 4
- 00000169  85 C0		    test eax, eax
- 0000016B  0F 84 00000092	    jz @exit_program               ; 如果時間返回無效，退出程式
+ 00000153  A1 00000462 R	    mov eax, clock
+ 00000158  50			    push eax
+ 00000159  E8 00000000 E	    call sfClock_getElapsedTime
+ 0000015E  83 C4 04		    add esp, 4
+ 00000161  85 C0		    test eax, eax
+ 00000163  0F 84 00000086	    jz @exit_program               ; 如果時間返回無效，退出程式
 
 				    ; 提取微秒並轉換為秒數
- 00000171  BB 000F4240		    mov ebx, 1000000  ; 1,000,000 用於將微秒轉換為秒
- 00000176  33 D2		    xor edx, edx      ; 清除 edx，準備進行除法操作
- 00000178  F7 F3		    div ebx           ; eax = microseconds / 1,000,000 (秒數)
- 0000017A  F3/ 0F 11 05		    movss note_timer, xmm0  ; 將秒數存儲到 note_timer
-	   00000466 R
+ 00000169  BB 000F4240		    mov ebx, 1000000  ; 1,000,000 用於將微秒轉換為秒
+ 0000016E  33 D2		    xor edx, edx      ; 清除 edx，準備進行除法操作
+ 00000170  F7 F3		    div ebx           ; eax = microseconds / 1,000,000 (秒數)
+ 00000172  F3/ 0F 2A C0		    cvtsi2ss xmm0, eax
 
 				    ; 判斷是否生成新的音符
- 00000182  F3/ 0F 10 05		    movss xmm0, note_timer
-	   00000466 R
- 0000018A  F3/ 0F 10 0D		    movss xmm1, note_interval
+ 00000176  F3/ 0F 10 0D		    movss xmm1, note_interval
 	   0000046A R
- 00000192  0F 2F C1		    comiss xmm0, xmm1
- 00000195  72 0A		    jb @skip_generate_note
+ 0000017E  0F 2F C1		    comiss xmm0, xmm1
+ 00000181  72 0A		    jb @skip_generate_note  ; 若音符生成間隔未達一秒，跳過
 
 				    ; 生成音符並重置計時器
- 00000197  E8 FFFFFEC7		    call @generate_note
- 0000019C  E8 00000000 E	    call sfClock_restart           ; 重置時鐘
+ 00000183  E8 FFFFFEDB		    call @generate_note
+ 00000188  E8 00000000 E	    call sfClock_restart           ; 重置時鐘
 
- 000001A1			@skip_generate_note:
+ 0000018D			@skip_generate_note:
 				    ; 更新音符
- 000001A1  E8 FFFFFF1A		    call @update_notes
+ 0000018D  E8 FFFFFF2E		    call @update_notes
 
 				    ; 清除視窗
- 000001A6  FF 35 00000492 R	    push blackColor
- 000001AC  FF 75 08		    push window
- 000001AF  E8 00000000 E	    call sfRenderWindow_clear
- 000001B4  83 C4 08		    add esp, 8
+ 00000192  FF 35 00000492 R	    push blackColor
+ 00000198  FF 75 08		    push window
+ 0000019B  E8 00000000 E	    call sfRenderWindow_clear
+ 000001A0  83 C4 08		    add esp, 8
 
 				    ; 繪製背景
- 000001B7  6A 00		    push 0
- 000001B9  A1 00000052 R	    mov eax, bgSprite
- 000001BE  50			    push eax
- 000001BF  8B 4D 08		    mov ecx, window
- 000001C2  51			    push ecx
- 000001C3  E8 00000000 E	    call sfRenderWindow_drawSprite
- 000001C8  83 C4 0C		    add esp, 12
+ 000001A3  6A 00		    push 0
+ 000001A5  A1 00000052 R	    mov eax, bgSprite
+ 000001AA  50			    push eax
+ 000001AB  8B 4D 08		    mov ecx, window
+ 000001AE  51			    push ecx
+ 000001AF  E8 00000000 E	    call sfRenderWindow_drawSprite
+ 000001B4  83 C4 0C		    add esp, 12
 
 				    ; 繪製音符
- 000001CB  33 F6		    xor esi, esi
- 000001CD			@draw_notes_loop:
- 000001CD  3B 35 0000045E R	    cmp esi, noteCount
- 000001D3  7D 1D		    jge @end_draw_notes
+ 000001B7  33 F6		    xor esi, esi
+ 000001B9			@draw_notes_loop:
+ 000001B9  3B 35 0000045E R	    cmp esi, noteCount
+ 000001BF  7D 1D		    jge @end_draw_notes
 
- 000001D5  8B 04 B5		    mov eax, DWORD PTR [noteSprites + esi*4]
+ 000001C1  8B 04 B5		    mov eax, DWORD PTR [noteSprites + esi*4]
 	   0000005E R
- 000001DC  85 C0		    test eax, eax
- 000001DE  74 0F		    jz @next_draw
+ 000001C8  85 C0		    test eax, eax
+ 000001CA  74 0F		    jz @next_draw
 
- 000001E0  6A 00		    push 0
- 000001E2  50			    push eax
- 000001E3  8B 4D 08		    mov ecx, window
- 000001E6  51			    push ecx
- 000001E7  E8 00000000 E	    call sfRenderWindow_drawSprite
- 000001EC  83 C4 0C		    add esp, 12
+ 000001CC  6A 00		    push 0
+ 000001CE  50			    push eax
+ 000001CF  8B 4D 08		    mov ecx, window
+ 000001D2  51			    push ecx
+ 000001D3  E8 00000000 E	    call sfRenderWindow_drawSprite
+ 000001D8  83 C4 0C		    add esp, 12
 
- 000001EF			@next_draw:
- 000001EF  46			    inc esi
- 000001F0  EB DB		    jmp @draw_notes_loop
- 000001F2			@end_draw_notes:
+ 000001DB			@next_draw:
+ 000001DB  46			    inc esi
+ 000001DC  EB DB		    jmp @draw_notes_loop
+ 000001DE			@end_draw_notes:
 
 				    ; 顯示視窗
- 000001F2  8B 45 08		    mov eax, window
- 000001F5  50			    push eax
- 000001F6  E8 00000000 E	    call sfRenderWindow_display
- 000001FB  83 C4 04		    add esp, 4
+ 000001DE  8B 45 08		    mov eax, window
+ 000001E1  50			    push eax
+ 000001E2  E8 00000000 E	    call sfRenderWindow_display
+ 000001E7  83 C4 04		    add esp, 4
 
- 000001FE  E9 FFFFFF44		    jmp @main_loop
+ 000001EA  E9 FFFFFF50		    jmp @main_loop
 
- 00000203			@exit_program:
- 00000203  E8 FFFFFEE6		    call @cleanup_notes
+ 000001EF			@exit_program:
+ 000001EF  E8 FFFFFEFA		    call @cleanup_notes
 
- 00000208  FF 35 00000052 R	    push bgSprite
- 0000020E  E8 00000000 E	    call sfSprite_destroy
- 00000213  83 C4 04		    add esp, 4
+ 000001F4  FF 35 00000052 R	    push bgSprite
+ 000001FA  E8 00000000 E	    call sfSprite_destroy
+ 000001FF  83 C4 04		    add esp, 4
 
- 00000216  FF 35 0000004E R	    push bgTexture
- 0000021C  E8 00000000 E	    call sfTexture_destroy
- 00000221  83 C4 04		    add esp, 4
+ 00000202  FF 35 0000004E R	    push bgTexture
+ 00000208  E8 00000000 E	    call sfTexture_destroy
+ 0000020D  83 C4 04		    add esp, 4
 
- 00000224  FF 35 00000056 R	    push redNoteTexture
- 0000022A  E8 00000000 E	    call sfTexture_destroy
- 0000022F  83 C4 04		    add esp, 4
+ 00000210  FF 35 00000056 R	    push redNoteTexture
+ 00000216  E8 00000000 E	    call sfTexture_destroy
+ 0000021B  83 C4 04		    add esp, 4
 
- 00000232  FF 35 00000462 R	    push clock
- 00000238  E8 00000000 E	    call sfClock_destroy
- 0000023D  83 C4 04		    add esp, 4
+ 0000021E  FF 35 00000462 R	    push clock
+ 00000224  E8 00000000 E	    call sfClock_destroy
+ 00000229  83 C4 04		    add esp, 4
 
 				    ret
- 00000242			main_game_page ENDP
+ 0000022E			main_game_page ENDP
 
 				END main_game_page
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/18/24 15:21:17
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/18/24 23:46:18
 main_game_page.asm					     Symbols 2 - 1
 
 
@@ -549,6 +549,8 @@ sfFloatRect  . . . . . . . . . .	 00000010
   top  . . . . . . . . . . . . .	 00000004	 DWord
   _width . . . . . . . . . . . .	 00000008	 DWord
   height . . . . . . . . . . . .	 0000000C	 DWord
+sfTime . . . . . . . . . . . . .	 00000004
+  microseconds . . . . . . . . .	 00000000	 DWord
 sfVector2f . . . . . . . . . . .	 00000008
   x  . . . . . . . . . . . . . .	 00000000	 DWord
   y  . . . . . . . . . . . . . .	 00000004	 DWord
@@ -567,7 +569,7 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 _DATA  . . . . . . . . . . . . .	32 Bit	 000004A6 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 00000242 Para	  Public  'CODE'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000022E Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -588,14 +590,14 @@ Procedures, parameters, and locals:
   @loop_notes  . . . . . . . . .	L Near	 000000C2 _TEXT	
   @next_note . . . . . . . . . .	L Near	 000000EA _TEXT	
   @end . . . . . . . . . . . . .	L Near	 000000ED _TEXT	
-main_game_page . . . . . . . . .	P Near	 00000110 _TEXT	Length= 00000132 Public C
+main_game_page . . . . . . . . .	P Near	 00000110 _TEXT	Length= 0000011E Public C
   window . . . . . . . . . . . .	DWord	 bp + 00000008
-  @main_loop . . . . . . . . . .	L Near	 00000147 _TEXT	
-  @skip_generate_note  . . . . .	L Near	 000001A1 _TEXT	
-  @draw_notes_loop . . . . . . .	L Near	 000001CD _TEXT	
-  @next_draw . . . . . . . . . .	L Near	 000001EF _TEXT	
-  @end_draw_notes  . . . . . . .	L Near	 000001F2 _TEXT	
-  @exit_program  . . . . . . . .	L Near	 00000203 _TEXT	
+  @main_loop . . . . . . . . . .	L Near	 0000013F _TEXT	
+  @skip_generate_note  . . . . .	L Near	 0000018D _TEXT	
+  @draw_notes_loop . . . . . . .	L Near	 000001B9 _TEXT	
+  @next_draw . . . . . . . . . .	L Near	 000001DB _TEXT	
+  @end_draw_notes  . . . . . . .	L Near	 000001DE _TEXT	
+  @exit_program  . . . . . . . .	L Near	 000001EF _TEXT	
 
 
 Symbols:

@@ -20,7 +20,7 @@ extern currentPage: DWORD
     ; 計時器
     clock dd 0
     note_timer REAL4 0.0       ; 音符生成計時器
-    note_interval REAL4 10.0    ; 每 1 秒生成一個音符
+    note_interval REAL4 1.0    ; 每 1 秒生成一個音符
 
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
@@ -193,9 +193,6 @@ main_game_page PROC window:DWORD
     jz @exit_program
     mov clock, eax
 
-    ; 設置音符生成間隔開始時間
-    movss note_timer, xmm0
-
 @main_loop:
     ; 檢查視窗是否開啟
     mov eax, window
@@ -217,13 +214,12 @@ main_game_page PROC window:DWORD
     mov ebx, 1000000  ; 1,000,000 用於將微秒轉換為秒
     xor edx, edx      ; 清除 edx，準備進行除法操作
     div ebx           ; eax = microseconds / 1,000,000 (秒數)
-    movss note_timer, xmm0  ; 將秒數存儲到 note_timer
+    cvtsi2ss xmm0, eax
 
     ; 判斷是否生成新的音符
-    movss xmm0, note_timer
     movss xmm1, note_interval
     comiss xmm0, xmm1
-    jb @skip_generate_note
+    jb @skip_generate_note  ; 若音符生成間隔未達一秒，跳過
 
     ; 生成音符並重置計時器
     call @generate_note
