@@ -1,5 +1,8 @@
+<<<<<<<<< Temporary merge branch 1
 .686P
 .XMM
+=========
+>>>>>>>>> Temporary merge branch 2
 .model flat, c
 include csfml.inc
 include windows.inc
@@ -9,18 +12,8 @@ includelib msvcrt.lib
 
 
 extern currentPage: DWORD
-extern GetStdHandle@4:PROC
-extern CreateFileA@28:PROC
-extern WriteFile@20:PROC
-extern ReadFile@20:PROC
-extern ExitProcess@4:PROC
-extern CloseHandle@4:PROC
-extern WriteConsoleA@20:PROC
-extern GetLastError@0:PROC
 
 .data
-
-
     ; 檔案路徑
     bg_path db "assets/main/bg_genre_2.png", 0
     red_note_path db "assets/main/red_note.png", 0
@@ -52,7 +45,6 @@ extern GetLastError@0:PROC
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
-    ; Note and Beatmap Processing
     notePosition sfVector2f <1200.0, 200.0>  ; 音符的 X 和 Y 座標
     movePosition sfVector2f <-0.1, 0.0>
     notes db 256 DUP(0)
