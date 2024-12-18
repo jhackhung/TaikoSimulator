@@ -464,7 +464,7 @@ exit_program:
     push bgSprite
     call sfSprite_destroy
     add esp, 4
-
+     
     push bgTexture
     call sfTexture_destroy
     add esp, 4
