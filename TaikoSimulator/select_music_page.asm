@@ -24,14 +24,6 @@ public selected_beatmap1_path
     music2_path db "assets/main/song2.ogg", 0
     music3_path db "assets/main/song3.ogg", 0
 
-    selected_music_path db "assets/main/song1.ogg", 0
-    selected_beatmap1_path db "assets/main/beatmap1.ogg", 0
-
-    beatmap1_path db "assets/main/beatmap1.ogg", 0
-
-
-
-
     bg_path db "assets/main/song_select_bg.jpg", 0
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
 
