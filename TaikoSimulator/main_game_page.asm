@@ -4,6 +4,7 @@ include windows.inc
 
 extern currentPage: DWORD
 extern create_button: PROC
+EXTERN end_game_page:PROC
 
 GENERIC_READ equ 80000000h
 FILE_ATTRIBUTE_NORMAL equ 80h
@@ -31,6 +32,8 @@ Drum ENDS
     selected_music_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
     selected_beatmap_path db "assets/music/song1_beatmap.tja", 0
 
+    inputString db "1001201000102010,1001202000002222,1001201000102000,0000000000112212", 0
+
     ;常數
     MAX_DRUMS equ 100 
     Drum_struct_size equ 8     ; Drum 結構大小
@@ -45,6 +48,14 @@ Drum ENDS
     track_y REAL4 200.0
     spritePosX    dd 0.0
     spritePosY    dd 0.0
+    constant dd 60000.0         ; 常數 60000.0
+    four dd 4.0                 ; 常數 4.0
+
+    ;用來存great good miss 的次數和最後總分
+    great_count DWORD 0
+    good_count DWORD 0
+    miss_count DWORD 0
+    score DWORD 0
 
     ; CSFML 物件
     bgTexture dd 0
@@ -72,6 +83,7 @@ Drum ENDS
     noteSpawnInterval dd 0.0  ; 音符生成間隔 (毫秒)
     notes dd MAX_NOTES DUP(0) ; 儲存音符數據
     totalNotes dd 0
+    currentNoteIndex dd 0
 
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
@@ -131,6 +143,7 @@ readFile ENDP
 
 ; 載入背景
 @load_bg PROC
+
     ; 創建背景紋理
     push 0
     push offset bg_path
@@ -161,41 +174,48 @@ readFile ENDP
     ret
 @load_bg ENDP
 
-create_track PROC
-     ; 初始化軌道
-    push ecx
-    movss xmm0, dword ptr [track_height]
-    movss dword ptr [esp], xmm0
+parseNoteChart PROC
+start:
+    ; 初始化
+    lea esi, [inputString]  ; ESI 指向輸入字串起始位置
+    lea edi, [notes]        ; EDI 指向音符存放陣列
+    xor ecx, ecx            ; ECX 記錄總音符數
 
-    push ecx
-    movss xmm0, dword ptr [track_width]
-    movss dword ptr [esp], xmm0
+parse_loop:
+    mov al, [esi]           ; 讀取目前字元
+    cmp al, 0               ; 檢查是否結束字串
+    je parse_end
 
-    push ecx
-    movss xmm0, dword ptr [track_y]
-    movss dword ptr [esp], xmm0
+    cmp al, '0'             ; 檢查是否是數字
+    jb skip_char
+    cmp al, '9'
+    ja skip_char
 
-    push ecx
-    movss xmm0, dword ptr [track_x]
-    movss dword ptr [esp], xmm0
+    sub al, '0'             ; 將 ASCII 字元轉為數字
+    mov [edi], al           ; 將數字存入音符陣列
+    inc edi                 ; 移動到下一個音符位置
+    inc ecx                 ; 音符數量加一
+    jmp next_char
 
-    call create_button
-    add esp, 16
-    mov dword ptr [track_shape], eax
-    mov dword ptr [track_shape.state], BUTTON_STATE_NORMAL
+skip_char:
+    cmp al, ','         ; 如果是逗號，跳過
+    jne next_char
 
-    ; 修改底部長方形顏色和邊框
-    push blackColor  ; 黑色
-    push dword ptr [track_shape]
-    call sfRectangleShape_setFillColor
-    add esp, 8
+next_char:
+    inc esi                 ; 移動到下一個字元
+    jmp parse_loop
 
-    push whiteColor  ; 白色邊框
-    push dword ptr [track_shape]
-    call sfRectangleShape_setOutlineColor
-    add esp, 8
-    ret   
-create_track ENDP
+parse_end:
+    mov [totalNotes], ecx
+
+    movss xmm0, [constant]
+    movss xmm1, [bpm]
+    mulss xmm1, [four]
+    divss xmm0, xmm1
+    movss [noteSpawnInterval], xmm0
+
+    ret
+parseNoteChart ENDP
 
 ; 載入紅鼓紋理
 @load_red_texture PROC
@@ -431,6 +451,11 @@ main_game_page PROC window:DWORD
     test eax, eax
     jz @exit_program
 
+    ;載入鼓面
+    call parseNoteChart
+    test eax, eax
+    jz @exit_program
+
     ; 載入tja檔
     ;push offset selected_beatmap_path
     ;call parseNoteChart
@@ -438,10 +463,10 @@ main_game_page PROC window:DWORD
     ;jz @exit_program
 
     ; 初始化計時器
-    ;call sfClock_create
-    ;test eax, eax
-    ;jz @exit_program
-    ;mov clock, eax
+    call sfClock_create
+    test eax, eax
+    jz @exit_program
+    mov clock, eax
 
 @main_loop:
 
@@ -461,31 +486,26 @@ main_game_page PROC window:DWORD
     je @exit_program
 
     ; 更新計時器
-    ;mov eax, clock
-    ;push eax
-    ;call sfClock_getElapsedTime
-    ;add esp, 4
-    ;test eax, eax
-    ;jz @exit_program               ; 如果時間返回無效，退出程式
+    mov eax, clock
+    push eax
+    call sfClock_getElapsedTime
+    add esp, 4
+    test eax, eax
+    jz @exit_program               ; 如果時間返回無效，退出程式
 
     ; 提取微秒並轉換為秒數
-    ;mov ebx, 1000000  ; 1,000,000 用於將微秒轉換為秒
-    ;xor edx, edx      ; 清除 edx，準備進行除法操作
-    ;div ebx           ; eax = microseconds / 1,000,000 (秒數)
-    ;cvtsi2ss xmm0, eax
+    mov ebx, 1000  ; 1,000,000 用於將微秒轉換為秒
+    xor edx, edx      ; 清除 edx，準備進行除法操作
+    div ebx           ; eax = microseconds / 1,000,000 (秒數)
+    cvtsi2ss xmm0, eax
+    ;movss note_timer, xmm0  ; 將秒數存儲到 note_timer
+    cmp eax, noteSpawnInterval
+    jb update
+    cmp currentNoteIndex, totalNotes
+    jae update
 
-    ; 判斷是否生成新的音符
-    ;movss xmm1, note_interval
-    ;comiss xmm0, xmm1
-    ;jb @skip_generate_note  ; 若音符生成間隔未達一秒，跳過
-
-    ; 生成音符並重置計時器
-    ;call @generate_note
-    ;call sfClock_restart           ; 重置時鐘
-
-;@skip_generate_note:
-    ; 更新音符
-    ;call @update_notes
+update:
+    call updateDrums
 
     ; 清除視窗
     push blackColor
@@ -502,36 +522,7 @@ main_game_page PROC window:DWORD
     call sfRenderWindow_drawSprite
     add esp, 12
 
-    ;繪製軌道
-    ;push 0
-    ;mov eax, DWORD PTR [track_shape]
-    ;push eax
-    ;mov ecx, DWORD PTR [window]
-    ;push ecx
-    ;call sfRenderWindow_drawRectangleShape
-    ;add esp, 12
 
-    ; 繪製音符
-    xor esi, esi
-;@draw_notes_loop:
-    ;cmp esi, noteCount
-    ;jge @end_draw_notes
-
-    ;mov eax, DWORD PTR [noteSprites + esi*4]
-    ;test eax, eax
-    ;jz @next_draw
-
-    ;push 0
-    ;push eax
-    ;mov ecx, window
-    ;push ecx
-    ;call sfRenderWindow_drawSprite
-    ;add esp, 12
-
-;@next_draw:
-    ;inc esi
-    ;jmp @draw_notes_loop
-;@end_draw_notes:
 
     ; 顯示視窗
     mov eax, window
@@ -543,6 +534,14 @@ main_game_page PROC window:DWORD
 
 ; 跳轉結算畫面
 to_end_page:
+    ;遊戲結束要切換到結尾畫面
+    push score    
+    push miss_count    
+    push good_count   
+    push great_count    
+    push window        
+    call end_game_page
+    add esp, 20
     mov DWORD PTR [currentPage], 2
     jmp @exit_program
 
