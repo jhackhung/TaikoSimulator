@@ -252,10 +252,11 @@ main_game_page PROC window:DWORD
     jz @exit_program               ; 如果時間返回無效，退出程式
 
     ; 檢查音樂是否停止
-    ;push bgMusic
-    ;call sfMusic_getStatus
-    ;cmp eax, 0
-    ;je to_end_page
+    push bgMusic
+    call sfMusic_getStatus
+    add esp, 4
+    cmp eax, 0
+    je @to_end_page
 
     ; 提取微秒並轉換為秒數
     mov ebx, 1000000  ; 1,000,000 用於將微秒轉換為秒
@@ -325,9 +326,9 @@ main_game_page PROC window:DWORD
     jmp @main_loop
 
 ; 跳轉結算畫面
-;@to_end_page:
-    ;mov DWORD PTR [currentPage], 2
-    ;jmp exit_program
+@to_end_page:
+    mov DWORD PTR [currentPage], 2
+    jmp @exit_program
 
 
 
