@@ -98,6 +98,10 @@ sfEvent STRUCT
     mouseMove sfVector2i <>     
 sfEvent ENDS
 
+sfTime STRUCT
+    microseconds DWORD ?    
+sfTime ENDS
+
 ; 函數原型 - 視窗相關
 EXTERN sfRenderWindow_create:PROC
 EXTERN sfRenderWindow_destroy:PROC
@@ -120,6 +124,7 @@ EXTERN sfSprite_setTexture:PROC
 EXTERN sfSprite_setPosition:PROC
 EXTERN sfSprite_setOrigin:PROC
 EXTERN sfSprite_move:PROC
+EXTERN sfSprite_getPosition:PROC
 
 ; 函數原型 - 音樂相關
 EXTERN sfMusic_createFromFile:PROC

@@ -164,6 +164,7 @@
     <MASM Include="select_music_page.asm" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\..\Downloads\windows.inc" />
     <None Include="csfml.inc" />
     <None Include="windows.inc" />
   </ItemGroup>
