@@ -36,13 +36,15 @@ Drum ENDS
     Drum_struct_size equ 8     ; Drum 挡篶
     MAX_NOTES equ 10000
     MAX_LINE_LENGTH equ 1000
-    SCREEN_WIDTH equ 1280
+    SCREEN_WIDTH equ 1280.0
     SCREEN_HEIGHT equ 720
-    DRUM_SPEED equ 0.5
+    DRUM_SPEED dd 0.5
     track_height REAL4 100.0
     track_width REAL4 1280.0
     track_x REAL4 640.0
     track_y REAL4 200.0
+    spritePosX    dd 0.0
+    spritePosY    dd 0.0
 
     ; CSFML ン
     bgTexture dd 0
@@ -360,100 +362,52 @@ updateDrums PROC
     mov eax, [edi]           ;sprite
     mov ebx, [edi + 4]       ;dtype
 
+    push eax
+    call sfSprite_getPosition
+    add esp, 8
+
+    movss [spritePosX], xmm0
+    add [spritePosX], 50
+    cmp [spritePosX], 50
+    jae end_update
+
+    call dequeue
+
+    mov ecx, qsize
+    mov ebx, front
+update_queue:
+    ; 弄 drum
+    mov eax, [edi]           ;sprite
+
+    push eax
+    call sfSprite_getPosition
+    add esp, 8
+    
+    movss [spritePosX], xmm0
+    movss [spritePosY], xmm1
+    movss xmm0, [spritePosX]
+    movss xmm1, [DRUM_SPEED]
+    subss xmm0, xmm1
+    movss [spritePosX], xmm0
+
+    push dword ptr [spritePosY] ; Y 畒夹
+    push dword ptr [spritePosX]   ; X 畒夹
+    push eax
+    call sfSprite_setPosition
+    add esp, 12
+
+    inc ebx
+    mov eax, ebx
+    xor edx, edx
+    mov ecx, MAX_DRUMS
+    div ecx
+    mov ebx, edx
+
+loop update_queue
+
 end_update:
     ret
 updateDrums ENDP
-
-; ネΘ穝才
-;@generate_note PROC
-    ; 狦才禬筁程计秖玥铬筁
-    ;mov eax, noteCount
-    ;cmp eax, 256   ; ネΘ程 256 才
-    ;jae @end
-
-    ; 承穝才弘艶
-    ;call sfSprite_create
-    ;test eax, eax
-    ;jz @end
-
-    ; 盢穝才弘艶纗皚い
-    ;mov esi, noteCount           ; ㄏノ noteCount ㄓ絋玂まΤ
-    ;mov DWORD PTR [noteSprites + esi*4], eax
-
-    ; 砞﹚︹才瞶
-    ;push 1
-    ;mov eax, redDrumTexture
-    ;push eax
-    ;mov ecx, DWORD PTR [noteSprites + esi*4]
-    ;push ecx
-    ;call sfSprite_setTexture
-    ;add esp, 12
-
-    ; 砞﹚才﹍竚
-    ;push dword ptr [notePosition+4] ; Y 畒夹
-    ;push dword ptr [notePosition]   ; X 畒夹
-    ;mov eax, DWORD PTR [noteSprites + esi*4]
-    ;push eax
-    ;call sfSprite_setPosition
-    ;add esp, 12
-
-    ; 穝才计秖
-    ;inc noteCount
-;@end:
-    ;ret
-;@generate_note ENDP
-
-; 穝才竚
-;@update_notes PROC
-    ;xor esi, esi
-
-;@loop_notes:
-    ;cmp esi, noteCount
-    ;jge @end
-
-    ; 浪琩才琌Τ
-    ;mov eax, DWORD PTR [noteSprites + esi*4]
-    ;test eax, eax
-    ;jz @next_note
-
-    ; 簿笆才
-    ;push dword ptr [movePosition+4] ; Y よぃ跑
-    ;push scrollSpeed                ; X よ簿笆
-    ;push eax
-    ;call sfSprite_move
-    ;add esp, 12
-
-;@next_note:
-    ;inc esi
-    ;jmp @loop_notes
-;@end:
-    ;ret
-;@update_notes ENDP
-
-; 睲瞶才
-;@cleanup_notes PROC
-    ;xor esi, esi
-
-;@loop_cleanup:
-    ;cmp esi, noteCount
-    ;jge @end
-
-    ; 浪琩才琌Τ
-    ;mov eax, DWORD PTR [noteSprites + esi*4]
-    ;test eax, eax
-    ;jz @next_cleanup
-
-    ; 綪反才弘艶
-    ;push eax
-    ;call sfSprite_destroy
-    ;add esp, 4
-
-;@next_cleanup:
-    ;inc esi
-    ;jmp @loop_cleanup
-;@end:
-    ;ret
-;@cleanup_notes ENDP
 
 main_game_page PROC window:DWORD
 
@@ -462,10 +416,15 @@ main_game_page PROC window:DWORD
     test eax, eax
     jz @exit_program
 
-    ; 更躬瞶
-    ;call @load_drums
-    ;test eax, eax
-    ;jz @exit_program
+    ; 更躬瞶
+    call @load_red_texture
+    test eax, eax
+    jz @exit_program
+
+    ; 更屡躬瞶
+    call @load_blue_texture
+    test eax, eax
+    jz @exit_program
 
     ;更贾
     call game_play_music
