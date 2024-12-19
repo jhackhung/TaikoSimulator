@@ -539,6 +539,7 @@ init_buttons PROC
     movss dword ptr [esp], xmm0
 
     push ecx
+
     movss xmm0, dword ptr [button_x]
     movss dword ptr [esp], xmm0
 
