@@ -72,6 +72,7 @@ Drum ENDS
     front dd 0
     rear dd 0
     qsize dd 0
+    index dd 0
 
     ; 時間相關
     clock dd 0
@@ -177,32 +178,32 @@ readFile ENDP
 parseNoteChart PROC
 start:
     ; 初始化
-    lea esi, [inputString]  ; ESI 指向輸入字串起始位置
-    lea edi, [notes]        ; EDI 指向音符存放陣列
-    xor ecx, ecx            ; ECX 記錄總音符數
+    lea esi, [inputString]
+    lea edi, [notes]
+    xor ecx, ecx 
 
 parse_loop:
-    mov al, [esi]           ; 讀取目前字元
-    cmp al, 0               ; 檢查是否結束字串
+    mov al, [esi]
+    cmp al, 0 
     je parse_end
 
-    cmp al, '0'             ; 檢查是否是數字
+    cmp al, '0'
     jb skip_char
-    cmp al, '9'
+    cmp al, '2'
     ja skip_char
 
-    sub al, '0'             ; 將 ASCII 字元轉為數字
-    mov [edi], al           ; 將數字存入音符陣列
-    inc edi                 ; 移動到下一個音符位置
-    inc ecx                 ; 音符數量加一
+    sub al, '0'
+    mov [edi], al
+    inc edi 
+    inc ecx 
     jmp next_char
 
 skip_char:
-    cmp al, ','         ; 如果是逗號，跳過
+    cmp al, ',' 
     jne next_char
 
 next_char:
-    inc esi                 ; 移動到下一個字元
+    inc esi
     jmp parse_loop
 
 parse_end:
@@ -339,7 +340,7 @@ end_dequeue:
     ret
 dequeue ENDP
 
-spawnDrum PROC             ;call前type要先push到eax
+spawnDrum PROC             ;call前type要先load到eax
     call isQueueFull
     cmp eax, 1
     je end_spawn
@@ -485,24 +486,39 @@ main_game_page PROC window:DWORD
     test eax, eax
     je @exit_program
 
+L1:
     ; 更新計時器
     mov eax, clock
     push eax
     call sfClock_getElapsedTime
     add esp, 4
     test eax, eax
-    jz @exit_program               ; 如果時間返回無效，退出程式
+    jz @exit_program 
 
     ; 提取微秒並轉換為秒數
-    mov ebx, 1000  ; 1,000,000 用於將微秒轉換為秒
-    xor edx, edx      ; 清除 edx，準備進行除法操作
-    div ebx           ; eax = microseconds / 1,000,000 (秒數)
+    mov ebx, 1000 
+    xor edx, edx
+    div ebx
     cvtsi2ss xmm0, eax
-    ;movss note_timer, xmm0  ; 將秒數存儲到 note_timer
     cmp eax, noteSpawnInterval
     jb update
-    cmp currentNoteIndex, totalNotes
-    jae update
+
+L2:
+    mov eax, [currentNoteIndex]
+    cmp eax, totalNotes
+    jae restart
+    lea edi, notes
+    add edi, eax
+    inc currentNoteIndex
+
+L3:
+    mov eax, [edi]
+    cmp eax, 0
+    je restart
+    call spawnDrum
+
+restart:
+    call sfClock_restart
 
 update:
     call updateDrums
@@ -522,7 +538,27 @@ update:
     call sfRenderWindow_drawSprite
     add esp, 12
 
+    mov ecx, [qsize]
+    mov edx, [index]
+    mov edx, [front]
+draw_loop:
+    ; 繪製鼓
+    push 0
+    mov eax, bgSprite
+    push eax
+    mov ebx, window
+    push ebx
+    call sfRenderWindow_drawSprite
+    add esp, 12
 
+    inc dword ptr [index]
+    mov eax, [index]
+    xor edx, edx
+    mov ecx, MAX_DRUMS
+    div ecx
+    mov dword ptr [index], edx
+
+loop draw_loop
 
     ; 顯示視窗
     mov eax, window
