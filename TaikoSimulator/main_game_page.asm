@@ -7,9 +7,8 @@ include windows.inc
 includelib kernel32.lib
 includelib msvcrt.lib
 
-
-
 extern currentPage: DWORD
+extern end_game_page:PROC
 
 .data
     ; 檔案路徑
@@ -17,8 +16,11 @@ extern currentPage: DWORD
     red_note_path db "assets/main/red_note.png", 0
     blue_note_path db "assets/main/blue_note.png", 0
 
+
     selectedMusicPath db "assets/main/song1.ogg", 0
     selectedBeatmapPath db "assets/main/song1.tja", 0
+    red_note_sound_path db "assets/main/RedNote.wav", 0
+    blue_note_sound_path db "assets/main/BlueNote.wav", 0
 
     ; CSFML 物件
     bgTexture dd 0
@@ -32,12 +34,20 @@ extern currentPage: DWORD
     ; 計時器
     clock dd 0
     note_timer REAL4 0.0       ; 音符生成計時器
-    note_interval REAL4 100.0    ; 每 1 秒生成一個音符
+    note_interval REAL4 1200.0    ; 每 1 秒生成一個音符
 
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
     windowTitle db "Taiko Simulator", 0
     scrollSpeed REAL4 -0.05      ; 音符滾動速度 (向左移動)
+
+    ; 事件結構
+    event sfEvent <>
+
+    ; 確認鍵盤按鍵, 追蹤按鍵是否按下
+    KeyA_state dd 0
+    KeyD_state dd 0
+    KeyS_state dd 0 ;   for testing
 
     ; 顏色常數
     whiteColor sfColor <255, 255, 255, 255> ; 白色
@@ -52,6 +62,17 @@ extern currentPage: DWORD
     lineBuffer db 256 DUP(0)
     startTag db "#START", 0
     endTag db "#END", 0
+    
+     ; 判定窗口 (以毫秒計)
+    hitWindowGreat DWORD 35   ; "Great" 判定範圍
+    hitWindowGood  DWORD 80   ; "Good" 判定範圍
+    hitWindowMiss  DWORD 120  ; "Miss" 判定範圍
+
+    ; 用來存great good miss 的次數和最後總分
+    great_count DWORD 0
+    good_count DWORD 0
+    miss_count DWORD 0
+    score DWORD 0
 
 .code
 game_play_music PROC
@@ -119,6 +140,14 @@ game_play_music ENDP
     ret
 @load_notes ENDP
 
+@read_beatmap PROC
+
+
+    @end:
+        ret
+
+@read_beatmap ENDP
+
 ; 生成新的音符
 @generate_note PROC
     ; 如果音符超過最大數量，則跳過
@@ -154,8 +183,10 @@ game_play_music ENDP
 
     ; 更新音符數量
     inc noteCount
-@end:
-    ret
+
+    @end:
+        ret
+
 @generate_note ENDP
 
 ; 更新音符位置
@@ -206,9 +237,34 @@ game_play_music ENDP
 @next_cleanup:
     inc esi
     jmp @loop_cleanup
+
 @end:
     ret
 @cleanup_notes ENDP
+
+rednote_sound PROC
+    push offset red_note_sound_path
+    call sfMusic_createFromFile
+    add esp, 4 
+    mov bgMusic, eax
+
+    push eax
+    call sfMusic_play
+    add esp, 4
+    ret
+rednote_sound ENDP
+
+bluenote_sound PROC
+    push offset blue_note_sound_path
+    call sfMusic_createFromFile
+    add esp, 4 
+    mov bgMusic, eax
+
+    push eax
+    call sfMusic_play
+    add esp, 4
+    ret
+bluenote_sound ENDP
 
 main_game_page PROC window:DWORD
     ; 載入背景
@@ -274,7 +330,66 @@ main_game_page PROC window:DWORD
     call @generate_note
     call sfClock_restart           ; 重置時鐘
 
+    @event_loop:
+        ; 事件處理
+        lea esi, event
+        push esi
+        mov eax, window
+        push eax
+        call sfRenderWindow_pollEvent
+        add esp, 8
+        test eax, eax
+        je @skip_generate_note
+    
+        ; 檢查關閉事件
+        cmp dword ptr [esi].sfEvent._type, sfEvtClosed
+        je @to_end_page
 
+        ; 檢查滑鼠點擊
+        cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
+        je @skip_generate_note
+    
+        ; 檢查鍵盤事件
+        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
+        je @check_key_press
+
+        jmp @event_loop
+
+        @check_key_press:
+            cmp dword ptr [esi+4], sfKeyA
+            je @key_A_pressed
+
+            cmp dword ptr [esi+4], sfKeyD
+            je @key_D_pressed 
+            
+            jmp @event_loop
+
+@key_A_pressed:
+    mov dword ptr [KeyA_state], 1 ; 設定狀態已按下 
+    mov dword ptr [KeyD_state], 0
+    call rednote_sound
+    push eax
+    add esp, 4
+    ; delete the the latest note
+    jmp @main_loop
+
+@key_S_pressed:
+    mov dword ptr [KeyS_state], 1 ; 設定狀態已按下
+    mov dword ptr [KeyA_state], 0
+   mov dword ptr [KeyD_state], 0
+    mov DWORD PTR [currentPage], 3
+    jmp @to_end_page
+
+
+@key_D_pressed:
+    mov dword ptr [KeyD_state], 1 ; 設定狀態已按下
+    mov dword ptr [KeyA_state], 0
+    call bluenote_sound
+    push eax
+    add esp, 4
+    ; delete the the latest note
+    jmp @main_loop
+       
 
 @skip_generate_note:
     ; 更新音符
@@ -325,9 +440,17 @@ main_game_page PROC window:DWORD
 
     jmp @main_loop
 
-; 跳轉結算畫面
+; 準備結算
 @to_end_page:
-    mov DWORD PTR [currentPage], 2
+
+    push score    
+    push miss_count    
+    push good_count   
+    push great_count    
+    push window       
+    mov DWORD PTR [currentPage], 2      ;遊戲結束要切換到結尾畫面
+    call end_game_page
+    add esp, 20
     jmp @exit_program
 
 
