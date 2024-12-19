@@ -32,7 +32,7 @@ Drum ENDS
     selected_music_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
     selected_beatmap_path db "assets/music/song1_beatmap.tja", 0
 
-    inputString db "1001201000102010,1001202000002222,1001201000102000,0000000000112212", 0
+    beatmapString db "1001201000102010,1001202000002222,1001201000102000,0000000000112212", 0
 
     ;常數
     MAX_DRUMS equ 100 
@@ -178,7 +178,7 @@ readFile ENDP
 parseNoteChart PROC
 start:
     ; 初始化
-    lea esi, [inputString]
+    lea esi, [beatmapString]
     lea edi, [notes]
     xor ecx, ecx 
 
@@ -543,8 +543,15 @@ update:
     mov edx, [front]
 draw_loop:
     ; 繪製鼓
+    lea edi, drumQueue
+    mov eax, [index]
+    mov edx, Drum_struct_size
+    mul edx
+    add edi, eax
+
+    mov eax, [edi]           ;sprite
+
     push 0
-    mov eax, bgSprite
     push eax
     mov ebx, window
     push ebx
