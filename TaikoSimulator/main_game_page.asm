@@ -1,8 +1,6 @@
-<<<<<<<<< Temporary merge branch 1
 .686P
 .XMM
-=========
->>>>>>>>> Temporary merge branch 2
+
 .model flat, c
 include csfml.inc
 include windows.inc
@@ -244,6 +242,7 @@ main_game_page PROC window:DWORD
     test eax, eax
     je @exit_program
 
+
     ; 更新計時器
     mov eax, clock
     push eax
@@ -251,6 +250,12 @@ main_game_page PROC window:DWORD
     add esp, 4
     test eax, eax
     jz @exit_program               ; 如果時間返回無效，退出程式
+
+    ; 檢查音樂是否停止
+    ;push bgMusic
+    ;call sfMusic_getStatus
+    ;cmp eax, 0
+    ;je to_end_page
 
     ; 提取微秒並轉換為秒數
     mov ebx, 1000000  ; 1,000,000 用於將微秒轉換為秒
@@ -267,6 +272,8 @@ main_game_page PROC window:DWORD
     ; 生成音符並重置計時器
     call @generate_note
     call sfClock_restart           ; 重置時鐘
+
+
 
 @skip_generate_note:
     ; 更新音符
@@ -317,6 +324,13 @@ main_game_page PROC window:DWORD
 
     jmp @main_loop
 
+; 跳轉結算畫面
+;@to_end_page:
+    ;mov DWORD PTR [currentPage], 2
+    ;jmp exit_program
+
+
+
 @exit_program:
     call @cleanup_notes
 
@@ -335,6 +349,9 @@ main_game_page PROC window:DWORD
     push clock
     call sfClock_destroy
     add esp, 4
+
+
+
 
     ret
 main_game_page ENDP

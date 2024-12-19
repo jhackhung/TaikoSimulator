@@ -92,6 +92,12 @@ call_end_game_page:
     add esp, 8
     jmp game_loop
 
+call_main_game_page:
+	push DWORD PTR [window]
+	call main_game_page
+    add esp, 4
+	jmp game_loop
+
 
     ; 可以在此添加其他頁面的程序呼叫
     ; call_other_page:
