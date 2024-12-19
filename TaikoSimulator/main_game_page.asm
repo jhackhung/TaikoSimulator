@@ -1,41 +1,113 @@
 .model flat, c
 include csfml.inc
-;include windows.inc
+include windows.inc
 
 extern currentPage: DWORD
+
+GENERIC_READ equ 80000000h
+FILE_ATTRIBUTE_NORMAL equ 80h
+STD_OUTPUT_HANDLE equ -11
 
 .data
     ; 檔案路徑
     bg_path db "assets/main/bg_genre_2.png", 0
-    red_note_path db "assets/main/red_note.png", 0
-    blue_note_path db "assets/main/blue_note.png", 0
+    red_drum_path db "assets/main/red_note.png", 0
+    blue_drum_path db "assets/main/blue_note.png", 0
+    selected_music_path db "assets/music/never-gonna-give-you-up-official-music-video.mp3", 0
+    selected_beatmap_path db "assets/music/song1_beatmap.tja", 0
+
+    ;常數
+    MAX_DRUMS equ 100 
+    Drum_struct_size equ 8     ; Drum 結構大小
+    MAX_NOTES equ 10000
+    MAX_LINE_LENGTH equ 1000
+    SCREEN_WIDTH equ 1280
+    SCREEN_HEIGHT equ 720
+    DRUM_SPEED equ 0.5
 
     ; CSFML 物件
     bgTexture dd 0
     bgSprite dd 0
-    redNoteTexture dd 0
-    blueNoteTexture dd 0
-    noteSprites dd 256 DUP(0) ; 最多支援 256 個音符精靈
-    noteCount dd 0            ; 當前音符數量
+    redDrumTexture dd 0
+    blueDrumTexture dd 0
+    drumQueue dd MAX_DRUMS * Drum_struct_size DUP(0)   ; type為 Drum 的Queue
+    bgmusic dd 0
 
-    ; 計時器
+    ; Drum 結構
+    Drum_struct dd 0         ; sprite
+                dd 0         ; type(1 = 紅色鼓, 2 = 藍色鼓)
+
+    ;Queue 相關
+    front dd 0
+    rear dd 0
+    qsize dd 0
+
+    ; 時間相關
     clock dd 0
     note_timer REAL4 0.0       ; 音符生成計時器
-    note_interval REAL4 1.0    ; 每 1 秒生成一個音符
+    ;note_interval REAL4 1.0    ; 每 1 秒生成一個音符
+
+    ;譜面相關
+    bpm dd 113.65 ; 預設 BPM
+    noteSpawnInterval dd 0.0  ; 音符生成間隔 (毫秒)
+    notes dd MAX_NOTES DUP(0) ; 儲存音符數據
+    totalNotes dd 0
 
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
     windowTitle db "Taiko Simulator", 0
-    scrollSpeed REAL4 -0.5      ; 音符滾動速度 (向左移動)
+    ;scrollSpeed REAL4 -0.5      ; 音符滾動速度 (向左移動)
 
     ; 顏色常數
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
-    notePosition sfVector2f <1200.0, 200.0>  ; 音符的 X 和 Y 座標
-    movePosition sfVector2f <-0.1, 0.0>
+    ;notePosition sfVector2f <1200.0, 200.0>  ; 音符的 X 和 Y 座標
+    ;movePosition sfVector2f <-0.1, 0.0>
+
+    ;讀檔相關
+    stdout_handle dd 0
+
+    filename db "song1_beatmap.tja", 0
+    hFile dd 0
+    bytesRead dd 0
+    readBuffer db 1024 dup(0)
+
+    msgReadFail db "Read file failed.", 13, 10, 0
+
+    msgReadSuccess db "File content:", 13, 10, 0
+
 
 .code
+
+;播放音樂
+game_play_music PROC
+    push offset selected_music_path
+    call sfMusic_createFromFile
+    add esp, 4 
+    mov bgMusic, eax
+
+    push eax
+    call sfMusic_play
+    add esp, 4
+    ret
+game_play_music ENDP
+
+; 讀取文件內容
+readFile PROC
+    mov esi, esp
+
+    push 0
+    push offset bytesRead
+    push 1024
+    push offset readBuffer
+    push [hFile]
+    call ReadFile@20
+    add esp, 20
+
+    mov esp, esi
+    ret
+readFile ENDP
 
 ; 載入背景
 @load_bg PROC
@@ -69,22 +141,29 @@ extern currentPage: DWORD
     ret
 @load_bg ENDP
 
-; 載入音符
-@load_notes PROC
-    ; 創建紅色音符紋理
+; 載入鼓面紋理
+@load_drums PROC
     push 0
-    push offset red_note_path
+    push offset red_drum_path
     call sfTexture_createFromFile
     add esp, 8
     test eax, eax
     jz @fail_load
-    mov redNoteTexture, eax
-    ret
+    mov redDrumTexture, eax
 
+    push 0
+    push offset blue_drum_path
+    call sfTexture_createFromFile
+    add esp, 8
+    test eax, eax
+    jz @fail_load
+    mov blueDrumTexture, eax
+
+    ret
 @fail_load:
     mov eax, 0
     ret
-@load_notes ENDP
+@load_drums ENDP
 
 ; 生成新的音符
 @generate_note PROC
@@ -104,7 +183,7 @@ extern currentPage: DWORD
 
     ; 設定紅色音符紋理
     push 1
-    mov eax, redNoteTexture
+    mov eax, redDrumTexture
     push eax
     mov ecx, DWORD PTR [noteSprites + esi*4]
     push ecx
@@ -178,13 +257,25 @@ extern currentPage: DWORD
 @cleanup_notes ENDP
 
 main_game_page PROC window:DWORD
+
     ; 載入背景
     call @load_bg
     test eax, eax
     jz @exit_program
 
-    ; 載入音符
-    call @load_notes
+    ; 載入鼓面紋理
+    call @load_drums
+    test eax, eax
+    jz @exit_program
+
+    ;載入音樂
+    call game_play_music
+    test eax, eax
+    jz @exit_program
+
+    ; 載入tja檔
+    push offset notes_path
+    call parseNoteChart
     test eax, eax
     jz @exit_program
 
@@ -195,6 +286,7 @@ main_game_page PROC window:DWORD
     mov clock, eax
 
 @main_loop:
+
     ; 檢查視窗是否開啟
     mov eax, window
     push eax
@@ -286,7 +378,11 @@ main_game_page PROC window:DWORD
     call sfTexture_destroy
     add esp, 4
 
-    push redNoteTexture
+    push redDrumTexture
+    call sfTexture_destroy
+    add esp, 4
+
+    push blueDrumTexture
     call sfTexture_destroy
     add esp, 4
 
