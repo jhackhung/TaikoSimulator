@@ -4,10 +4,7 @@
 include csfml.inc
 
 extern currentPage: DWORD
-extern countGreat: DWORD
-extern countGood: DWORD
-extern countMiss: DWORD
-extern countScore: DWORD
+PUBLIC end_game_page
 
 BUTTON_STATE_NORMAL equ 0
 
@@ -33,6 +30,11 @@ Button ENDS
     font dd 0
     event sfEvent <>
     window_realWidth dd 044a00000r ; 1280.0
+
+    countGreat dd 0
+    countGood dd 0
+    countMiss dd 0
+    countScore dd 0
 
     countGreatText dd 0
     countGreatStr db 20 dup(0)
@@ -915,7 +917,16 @@ end_cleanup PROC
     ret
 end_cleanup ENDP
 
-end_game_page PROC window:DWORD
+end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count:DWORD, score:DWORD
+
+    mov eax, great_count
+    mov countGreat, eax
+    mov eax, good_count
+    mov countGood, eax
+    mov eax, miss_count
+    mov countMiss, eax
+    mov eax, score
+    mov countScore, eax
 
     ; ¸ü¤J­I´º
     call end_play_music
