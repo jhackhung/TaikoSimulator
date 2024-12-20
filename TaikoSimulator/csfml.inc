@@ -109,6 +109,8 @@ EXTERN sfRenderWindow_pollEvent:PROC
 EXTERN sfRenderWindow_drawSprite:PROC
 EXTERN sfRenderWindow_drawText:PROC
 
+EXTERN sfWindow_setFrameRateLimit:PROC
+
 ; 函數原型 - 紋理相關
 EXTERN sfTexture_createFromFile:PROC
 EXTERN sfTexture_destroy:PROC
