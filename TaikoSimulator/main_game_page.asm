@@ -1,22 +1,16 @@
 .model flat, c
 include csfml.inc
 include windows.inc
+;include stdio.h
 
 extern currentPage: DWORD
 extern create_button: PROC
 EXTERN end_game_page:PROC
+;EXTERN fopen: PROC
 
 GENERIC_READ equ 80000000h
 FILE_ATTRIBUTE_NORMAL equ 80h
 STD_OUTPUT_HANDLE equ -11
-
-BUTTON_STATE_NORMAL equ 0
-BUTTON_STATE_PRESSED equ 1
-
-Button STRUCT
-    shape dd ?
-    state dd ?
-Button ENDS
 
 ; Drum 結構
 Drum STRUCT
@@ -32,7 +26,7 @@ Drum ENDS
     selected_music_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
     selected_beatmap_path db "assets/music/song1_beatmap.tja", 0
 
-    beatmapString db "1001201000102010,1001202000002222,1001201000102000,0000000000112212", 0
+    beatmapString db "1001201000102010,1001202000002222,1001201000102000,0000000000112212,1001201110102010,1001201110202222,1001201110102010,1020200022112212,1010211010102000,1011211010202000,1011202010100010,3000404000000000,1010211010102000,1011211010202000", 0
 
     ;常數
     MAX_DRUMS equ 100 
@@ -48,8 +42,8 @@ Drum ENDS
     track_y REAL4 200.0
     spritePosX    dd 0.0
     spritePosY    dd 0.0
-    constant dd 60000.0         ; 常數 60000.0
-    four dd 4.0                 ; 常數 4.0
+    const_60000 dd 60000.0
+    four dd 4.0
 
     ;用來存great good miss 的次數和最後總分
     great_count DWORD 0
@@ -65,7 +59,6 @@ Drum ENDS
     drumQueue dd MAX_DRUMS * Drum_struct_size DUP(0)
     bgmusic dd 0
     trackBounds sfFloatRect <>
-    track_shape Button <>
     current_drum Drum <>
 
     ;Queue 相關
@@ -77,7 +70,6 @@ Drum ENDS
     ; 時間相關
     clock dd 0
     note_timer REAL4 0.0       ; 音符生成計時器
-    ;note_interval REAL4 1.0    ; 每 1 秒生成一個音符
 
     ;譜面相關
     bpm dd 113.65 ; 預設 BPM
@@ -89,16 +81,14 @@ Drum ENDS
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
     windowTitle db "Taiko Simulator", 0
-    ;scrollSpeed REAL4 -0.5      ; 音符滾動速度 (向左移動)
 
     ; 顏色常數
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
     initialPosition sfVector2f <SCREEN_WIDTH, 200.0>  ; 音符的 X 和 Y 座標
-    ;movePosition sfVector2f <-0.1, 0.0>
 
-    ;讀檔相關
+        ;讀檔相關
     stdout_handle dd 0
 
     filename db "song1_beatmap.tja", 0
@@ -109,7 +99,6 @@ Drum ENDS
     msgReadFail db "Read file failed.", 13, 10, 0
 
     msgReadSuccess db "File content:", 13, 10, 0
-
 
 .code
 
@@ -150,14 +139,10 @@ readFile ENDP
     push offset bg_path
     call sfTexture_createFromFile
     add esp, 8
-    test eax, eax
-    jz @fail_load
     mov bgTexture, eax
 
     ; 創建背景精靈
     call sfSprite_create
-    test eax, eax
-    jz @fail_load
     mov DWORD PTR [bgSprite], eax
 
     ; 設定紋理
@@ -169,15 +154,9 @@ readFile ENDP
     call sfSprite_setTexture
     add esp, 12
     ret
-
-@fail_load:
-    mov eax, 0
-    ret
 @load_bg ENDP
 
 parseNoteChart PROC
-start:
-    ; 初始化
     lea esi, [beatmapString]
     lea edi, [notes]
     xor ecx, ecx 
@@ -188,9 +167,9 @@ parse_loop:
     je parse_end
 
     cmp al, '0'
-    jb skip_char
+    jb next_char
     cmp al, '2'
-    ja skip_char
+    ja next_char
 
     sub al, '0'
     mov [edi], al
@@ -198,23 +177,17 @@ parse_loop:
     inc ecx 
     jmp next_char
 
-skip_char:
-    cmp al, ',' 
-    jne next_char
-
 next_char:
     inc esi
     jmp parse_loop
 
 parse_end:
     mov [totalNotes], ecx
-
-    movss xmm0, [constant]
+    movss xmm0, [const_60000]
     movss xmm1, [bpm]
     mulss xmm1, [four]
     divss xmm0, xmm1
     movss [noteSpawnInterval], xmm0
-
     ret
 parseNoteChart ENDP
 
@@ -224,13 +197,7 @@ parseNoteChart ENDP
     push offset red_drum_path
     call sfTexture_createFromFile
     add esp, 8
-    test eax, eax
-    jz @fail_load
     mov redDrumTexture, eax
-
-    ret
-@fail_load:
-    mov eax, 0
     ret
 @load_red_texture ENDP
 
@@ -240,16 +207,11 @@ parseNoteChart ENDP
     push offset blue_drum_path
     call sfTexture_createFromFile
     add esp, 8
-    test eax, eax
-    jz @fail_load
     mov blueDrumTexture, eax
-
-    ret
-@fail_load:
-    mov eax, 0
     ret
 @load_blue_texture ENDP
 
+;full會return 1
 isQueueFull PROC
     mov eax, qsize
     cmp eax, MAX_DRUMS
@@ -258,10 +220,10 @@ isQueueFull PROC
 
 queue_full:
     mov eax, 1
-
     ret
 isQueueFull ENDP
 
+;empty會return 1
 isQueueEmpty PROC
     mov eax, qsize
     cmp eax, 0
@@ -270,7 +232,6 @@ isQueueEmpty PROC
 
 queue_empty:
     mov eax, 1
-
     ret
 isQueueEmpty ENDP
 
@@ -539,8 +500,8 @@ update:
     add esp, 12
 
     mov ecx, [qsize]
-    mov edx, [index]
     mov edx, [front]
+    mov index, edx
 draw_loop:
     ; 繪製鼓
     lea edi, drumQueue
