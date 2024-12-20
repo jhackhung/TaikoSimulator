@@ -839,7 +839,7 @@ select_music_page PROC window:DWORD
     jne @event_loop              
 
 @keyA_enter:
-    mov DWORD PTR [currentPage], 3
+    mov DWORD PTR [currentPage], 2
     mov ebx, offset music1_path
     jmp @exit_program
 
