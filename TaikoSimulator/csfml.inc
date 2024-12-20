@@ -36,6 +36,7 @@ sfKeyEnter    equ 58
 sfKeyA        equ 0
 sfKeyS        equ 18
 sfKeyD        equ 3
+sfKeyEscape   equ 36
 
 ; 視窗風格定義
 sfNone       equ 0
@@ -153,3 +154,5 @@ EXTERN sfRectangleShape_setOutlineThickness: PROC
 EXTERN sfRenderWindow_drawRectangleShape: PROC
 EXTERN sfRectangleShape_destroy: PROC
 EXTERN sfRectangleShape_setOutlineColor: PROC
+
+EXTERN sfSleep: PROC

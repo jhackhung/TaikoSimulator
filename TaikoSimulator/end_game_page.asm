@@ -972,7 +972,14 @@ end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count
         cmp dword ptr [esi].sfEvent._type, sfEvtClosed
         je @end
 
+        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
+        je @check_key
+
         jmp @event_loop
+
+        @check_key:
+            cmp dword ptr [esi+4], sfKeyEscape
+            je @end
     
     @render_window:
 
