@@ -88,7 +88,7 @@ Drum ENDS
 
     initialPosition sfVector2f <SCREEN_WIDTH, 200.0>  ; 音符的 X 和 Y 座標
 
-        ;讀檔相關
+    ;讀檔相關
     stdout_handle dd 0
 
     filename db "song1_beatmap.tja", 0
@@ -256,7 +256,7 @@ enqueue PROC
 
     ; 更新rear、size
     inc dword ptr [rear]
-    mov eax, [rear]
+    mov eax, rear
     xor edx, edx
     mov ecx, MAX_DRUMS
     div ecx
@@ -290,7 +290,7 @@ dequeue PROC
 
     ; 更新front、size
     inc dword ptr [front]
-    mov eax, [front]
+    mov eax, front
     xor edx, edx
     mov ecx, MAX_DRUMS
     div ecx
@@ -492,9 +492,9 @@ update:
 
     ; 繪製背景
     push 0
-    mov eax, bgSprite
+    mov eax, DWORD PTR [bgSprite]
     push eax
-    mov ecx, window
+    mov ecx, DWORD PTR [window]
     push ecx
     call sfRenderWindow_drawSprite
     add esp, 12
@@ -502,31 +502,30 @@ update:
     mov ecx, [qsize]
     mov edx, [front]
     mov index, edx
-draw_loop:
+;draw_loop:
     ; 繪製鼓
-    lea edi, drumQueue
-    mov eax, [index]
-    mov edx, Drum_struct_size
-    mul edx
-    add edi, eax
+    ;lea edi, drumQueue
+    ;mov eax, index
+    ;mov edx, Drum_struct_size
+    ;mul edx
+    ;add edi, eax
 
-    mov eax, [edi]           ;sprite
+    ;mov eax, [edi]           ;sprite
 
-    push 0
-    push eax
-    mov ebx, window
-    push ebx
-    call sfRenderWindow_drawSprite
-    add esp, 12
+    ;push 0
+    ;push DWORD PTR [eax]
+    ;push DWORD PTR [window]
+    ;call sfRenderWindow_drawSprite
+    ;add esp, 12
 
-    inc dword ptr [index]
-    mov eax, [index]
-    xor edx, edx
-    mov ecx, MAX_DRUMS
-    div ecx
-    mov dword ptr [index], edx
+    ;inc dword ptr [index]
+    ;mov eax, index
+    ;xor edx, edx
+    ;mov ecx, MAX_DRUMS
+    ;div ecx
+    ;mov dword ptr [index], edx
 
-loop draw_loop
+;loop draw_loop
 
     ; 顯示視窗
     mov eax, window
