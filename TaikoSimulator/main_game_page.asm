@@ -1,7 +1,7 @@
 .model flat, c
 include csfml.inc
 include windows.inc
-;include stdio.h
+;include ucrt.inc
 
 extern currentPage: DWORD
 extern create_button: PROC
@@ -182,7 +182,7 @@ next_char:
     jmp parse_loop
 
 parse_end:
-    mov [totalNotes], ecx
+    mov totalNotes, ecx
     movss xmm0, [const_60000]
     movss xmm1, [bpm]
     mulss xmm1, [four]
@@ -240,28 +240,29 @@ enqueue PROC
     cmp eax, 1
     je end_enqueue
     
-    mov eax, [current_drum.sprite]      ; sprite
-    mov ebx, [current_drum.dtype]       ; dtype
-    lea edi, drumQueue
+    lea edi, [drumQueue]
 
     ; 計算擺放位置
-    mov eax, [rear]        
+    mov eax, rear      
     mov edx, Drum_struct_size
     mul edx                  
     add edi, eax 
+
+    mov eax, current_drum.sprite      ; sprite
+    mov ebx, current_drum.dtype       ; dtype
 
     ; 儲存drum資料
     mov [edi], eax           ; sprite
     mov [edi + 4], ebx       ; dtype
 
     ; 更新rear、size
-    inc dword ptr [rear]
+    inc rear
     mov eax, rear
     xor edx, edx
     mov ecx, MAX_DRUMS
     div ecx
-    mov dword ptr [rear], edx
-    inc dword ptr [qsize]
+    mov rear, edx
+    inc qsize
 
 end_enqueue:
     ret
@@ -274,7 +275,7 @@ dequeue PROC
 
     ; 計算移除位置
     lea edi, drumQueue
-    mov eax, [front]
+    mov eax, front
     mov edx, Drum_struct_size
     mul edx
     add edi, eax
@@ -289,13 +290,13 @@ dequeue PROC
     add esp, 4
 
     ; 更新front、size
-    inc dword ptr [front]
+    inc front
     mov eax, front
     xor edx, edx
     mov ecx, MAX_DRUMS
     div ecx
-    mov dword ptr [front], edx
-    dec dword ptr [qsize]
+    mov front, edx
+    dec qsize
 
 end_dequeue:
     ret
@@ -306,11 +307,11 @@ spawnDrum PROC             ;call前type要先load到eax
     cmp eax, 1
     je end_spawn
 
-    mov dword ptr [current_drum.dtype], eax
+    mov current_drum.dtype, eax
     call sfSprite_create
     mov DWORD PTR [current_drum.sprite], eax
 
-    cmp dword ptr [current_drum.dtype], 1
+    cmp current_drum.dtype, 1
     je spawnRed
     call @load_blue_texture
 
@@ -334,23 +335,19 @@ updateDrums PROC
     cmp qsize, 0
     jbe end_update
     
-    lea edi, drumQueue
-    mov eax, [front]
+    lea edi, [drumQueue]
+    mov eax, front
     mov edx, Drum_struct_size
     mul edx
     add edi, eax
 
-    ; 讀取 drum
-    mov eax, [edi]           ;sprite
-    mov ebx, [edi + 4]       ;dtype
-
-    push eax
+    push [edi]
     call sfSprite_getPosition
     add esp, 8
 
-    movss [spritePosX], xmm0
-    add [spritePosX], 50
-    cmp [spritePosX], 50
+    movss spritePosX, xmm0
+    add spritePosX, 50
+    cmp spritePosX, 50
     jae end_update
 
     call dequeue
@@ -361,20 +358,17 @@ update_queue:
     ; 讀取 drum
     mov eax, [edi]           ;sprite
 
-    push eax
+    push [eax]
     call sfSprite_getPosition
     add esp, 8
     
-    movss [spritePosX], xmm0
-    movss [spritePosY], xmm1
-    movss xmm0, [spritePosX]
-    movss xmm1, [DRUM_SPEED]
+    movss xmm1, DRUM_SPEED
     subss xmm0, xmm1
-    movss [spritePosX], xmm0
+    movss spritePosX, xmm0
 
     push dword ptr [spritePosY] ; Y 座標
     push dword ptr [spritePosX]   ; X 座標
-    push eax
+    push [eax]
     call sfSprite_setPosition
     add esp, 12
 
@@ -384,7 +378,6 @@ update_queue:
     mov ecx, MAX_DRUMS
     div ecx
     mov ebx, edx
-
 loop update_queue
 
 end_update:
@@ -413,7 +406,7 @@ main_game_page PROC window:DWORD
     test eax, eax
     jz @exit_program
 
-    ;載入鼓面
+    ;載入譜面
     call parseNoteChart
     test eax, eax
     jz @exit_program
@@ -428,7 +421,7 @@ main_game_page PROC window:DWORD
     call sfClock_create
     test eax, eax
     jz @exit_program
-    mov clock, eax
+    mov dword ptr [clock], eax
 
 @main_loop:
 
@@ -439,40 +432,43 @@ main_game_page PROC window:DWORD
     cmp eax, 0
     je to_end_page
 
+    ;檢查譜面是否跑完
+    mov eax, currentNoteIndex
+    cmp eax, totalNotes
+    jb check_window
+    call isQueueEmpty
+    cmp eax, 1
+    je to_end_page
+
+check_window:
     ; 檢查視窗是否開啟
-    mov eax, window
+    mov eax, DWORD PTR [window]
     push eax
     call sfRenderWindow_isOpen
     add esp, 4
     test eax, eax
     je @exit_program
 
-L1:
     ; 更新計時器
-    mov eax, clock
-    push eax
+    push [clock]
     call sfClock_getElapsedTime
     add esp, 4
     test eax, eax
     jz @exit_program 
 
-    ; 提取微秒並轉換為秒數
     mov ebx, 1000 
     xor edx, edx
     div ebx
-    cvtsi2ss xmm0, eax
     cmp eax, noteSpawnInterval
     jb update
 
-L2:
-    mov eax, [currentNoteIndex]
+    mov eax, currentNoteIndex
     cmp eax, totalNotes
     jae restart
-    lea edi, notes
+    lea edi, [notes]
     add edi, eax
     inc currentNoteIndex
 
-L3:
     mov eax, [edi]
     cmp eax, 0
     je restart
@@ -499,33 +495,30 @@ update:
     call sfRenderWindow_drawSprite
     add esp, 12
 
-    mov ecx, [qsize]
-    mov edx, [front]
+    mov ecx, qsize
+    mov edx, front
     mov index, edx
-;draw_loop:
+draw_loop:
     ; 繪製鼓
-    ;lea edi, drumQueue
-    ;mov eax, index
-    ;mov edx, Drum_struct_size
-    ;mul edx
-    ;add edi, eax
+    lea edi, [drumQueue]
+    mov eax, index
+    mov edx, Drum_struct_size
+    mul edx
+    add edi, eax
 
-    ;mov eax, [edi]           ;sprite
+    push 0
+    push edi
+    push DWORD PTR [window]
+    call sfRenderWindow_drawSprite
+    add esp, 12
 
-    ;push 0
-    ;push DWORD PTR [eax]
-    ;push DWORD PTR [window]
-    ;call sfRenderWindow_drawSprite
-    ;add esp, 12
-
-    ;inc dword ptr [index]
-    ;mov eax, index
-    ;xor edx, edx
-    ;mov ecx, MAX_DRUMS
-    ;div ecx
-    ;mov dword ptr [index], edx
-
-;loop draw_loop
+    inc index
+    mov eax, index
+    xor edx, edx
+    mov ecx, MAX_DRUMS
+    div ecx
+    mov index, edx
+loop draw_loop
 
     ; 顯示視窗
     mov eax, window
@@ -549,7 +542,6 @@ to_end_page:
     jmp @exit_program
 
 @exit_program:
-    ;call @cleanup_notes
 
     push bgSprite
     call sfSprite_destroy
@@ -567,14 +559,14 @@ to_end_page:
     call sfTexture_destroy
     add esp, 4
 
-    push clock
+    push dword ptr [clock]
     call sfClock_destroy
     add esp, 4
 
-    ;push dword ptr [track_shape]
-    ;call sfRectangleShape_destroy
-    ;add esp, 4
-
+    push bgMusic
+    call sfMusic_destroy
+    add esp, 4
+    
     ret
 main_game_page ENDP
 
