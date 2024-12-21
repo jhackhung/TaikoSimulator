@@ -10,6 +10,12 @@ includelib csfml-window.lib
 sfFalse     equ 0
 sfTrue      equ 1
 
+; sfMusic status
+sfStopped   equ 0
+sfPaused    equ 1
+sfPlaying   equ 2
+
+
 ; sfEventType 定義
 sfEvtClosed               equ 0
 sfEvtResized              equ 1
@@ -37,6 +43,9 @@ sfKeyA        equ 0
 sfKeyS        equ 18
 sfKeyD        equ 3
 sfKeyEscape   equ 36
+sfKeyF        equ 5
+sfKeyJ        equ 9
+sfKeyK        equ 10
 
 ; 視窗風格定義
 sfNone       equ 0
@@ -119,6 +128,8 @@ EXTERN sfTexture_destroy:PROC
 EXTERN sfSprite_create:PROC
 EXTERN sfSprite_destroy:PROC
 EXTERN sfSprite_setTexture:PROC
+EXTERN sfSprite_setPosition:PROC
+EXTERN sfSprite_getPosition:PROC
 
 ; 函數原型 - 音樂相關
 EXTERN sfMusic_createFromFile:PROC
@@ -147,6 +158,16 @@ EXTERN sfText_setPosition:PROC
 EXTERN sfColor_fromRGB:PROC
 EXTERN sfColor_fromRGBA:PROC
 
+; 函數原型 - 圓形相關
+EXTERN sfCircleShape_create: PROC
+EXTERN sfCircleShape_setPosition: PROC
+EXTERN sfCircleShape_setRadius: PROC
+EXTERN sfCircleShape_setFillColor: PROC
+EXTERN sfRenderWindow_drawCircleShape: PROC
+EXTERN sfCircleShape_destroy: PROC
+EXTERN sfCircleShape_setOutlineThickness: PROC
+EXTERN sfCircleShape_setOutlineColor: PROC
+
 ; 函數原型 - 矩形相關
 EXTERN sfRectangleShape_create: PROC
 EXTERN sfRectangleShape_setPosition: PROC
@@ -158,3 +179,6 @@ EXTERN sfRectangleShape_destroy: PROC
 EXTERN sfRectangleShape_setOutlineColor: PROC
 
 EXTERN sfSleep: PROC
+EXTERN sfClock_create: PROC
+EXTERN sfClock_getElapsedTime: PROC
+EXTERN sfClock_restart: PROC

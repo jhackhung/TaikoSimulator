@@ -8,6 +8,7 @@ include csfml.inc
 extern main_page_proc: PROC
 extern end_game_page: PROC
 extern select_music_page: PROC
+extern main_game_page: PROC
 
 public currentPage
 
@@ -19,6 +20,8 @@ window dd 0
 window_videoMode sfVideoMode <1280, 720, 32>
 
 playing_music db 0
+
+test_chart db 0
 .code
 
 create_window PROC
@@ -65,7 +68,10 @@ game_loop:
     je call_select_music_page    ; 如果是 1，呼叫 select_music_page
 
     cmp currentPage, 2
-    je call_end_game_page     ; 如果是 2，call end_game_page for testing starting game
+    je call_main_game_page     ; 如果是 2，call end_game_page for testing starting game
+
+    cmp currentPage, 3
+    je call_end_game_page 
     
     ; 可以添加其他頁面的處理分支
     ; cmp currentPage, 1
@@ -85,6 +91,14 @@ call_select_music_page:
 	call select_music_page
 	add esp, 4
     mov dword ptr [playing_music], ebx
+	jmp game_loop
+
+call_main_game_page:
+    push dword ptr [test_chart]
+    push dword ptr [playing_music]
+	push DWORD PTR [window]
+	call main_game_page
+	add esp, 12
 	jmp game_loop
 
 call_end_game_page:

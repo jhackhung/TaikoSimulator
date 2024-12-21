@@ -25,6 +25,8 @@ MusicInfo struct
 	notesInBar dword ?
 MusicInfo ends
 
+extern malloc:proc
+
 extern fopen:proc
 extern fclose:proc
 extern fgets:proc
