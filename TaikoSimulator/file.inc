@@ -34,6 +34,7 @@ extern fgets:proc
 
 extern strcspn:proc
 extern strncmp:proc
-;extern __imp____stdio_common_vsscanf:proc
+extern __stdio_common_vsscanf:proc
+extern __stdio_common_vsprintf_s:proc
 extern strtok_s:proc
 extern strlen:proc

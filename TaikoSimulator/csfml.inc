@@ -112,6 +112,7 @@ EXTERN sfRenderWindow_display:PROC
 EXTERN sfRenderWindow_pollEvent:PROC
 EXTERN sfRenderWindow_drawSprite:PROC
 EXTERN sfRenderWindow_drawText:PROC
+EXTERN sfWindow_setFramerateLimit:PROC
 
 ; 函數原型 - 紋理相關
 EXTERN sfTexture_createFromFile:PROC
@@ -132,7 +133,8 @@ EXTERN sfMusic_destroy:PROC
 EXTERN sfMusic_play:PROC
 EXTERN sfMusic_setLoop:PROC
 EXTERN sfMusic_stop: PROC
-EXTERN sfMusic_getStatus: PROC
+EXTERN sfMusic_getStatus:PROC
+EXTERN sfMusic_setLoop:PROC
 
 ; 函數原型 - 文字相關
 EXTERN sfFont_createFromFile:PROC
@@ -163,9 +165,18 @@ EXTERN sfRenderWindow_drawRectangleShape: PROC
 EXTERN sfRectangleShape_destroy: PROC
 EXTERN sfRectangleShape_setOutlineColor: PROC
 
+; 函數原型 - 時間相關
 EXTERN sfSleep: PROC
-
 EXTERN sfClock_create:PROC
 EXTERN sfClock_getElapsedTime:PROC
 EXTERN sfClock_restart:PROC
 EXTERN sfClock_destroy:PROC
+
+; 函數原型 - 圓形相關
+EXTERN sfCircleShape_create:PROC
+EXTERN sfCircleShape_setRadius:PROC
+EXTERN sfCircleShape_setPosition:PROC
+EXTERN sfCircleShape_setFillColor:PROC
+EXTERN sfCircleShape_setOutlineThickness:PROC
+EXTERN sfCircleShape_setOutlineColor:PROC
+EXTERN sfRenderWindow_drawCircleShape:PROC

@@ -9,10 +9,11 @@ EXTERN end_game_page:PROC
 ; Constants
 MAX_NOTES = 10000
 MAX_LINE_LENGTH = 1000
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
+;SCREEN_WIDTH = 1280
+;SCREEN_HEIGHT = 720
 MAX_DRUMS = 100
 HIT_POSITION_X = 450
+HIT_POSITION_Y = 225
 GREAT_THRESHOLD = 4
 GOOD_THRESHOLD = 30
 INITIAL_DELAY = 3
@@ -24,6 +25,7 @@ INITIAL_DELAY = 3
     blue_drum_path db "assets/main/blue_note.png", 0
     selected_music_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
     selected_beatmap_path db "assets/music/song1_beatmap.tja", 0
+    font_path db "assets\main\Taiko_No_Tatsujin_Official_Font.ttf", 0
 
     ;常數
     Drum_struct_size equ 12     ; Drum 結構大小
@@ -31,7 +33,10 @@ INITIAL_DELAY = 3
     spritePosY    dd 0.0
     const_60000 dd 60000.0
     const_1000 dd 1000.0
+    const_225 dd 225.0
     four dd 4.0
+    SCREEN_WIDTH real4 1280.0
+    SCREEN_HEIGHT real4 720.0
 
     ;用來存great good miss 的次數和最後總分
     great_count DWORD 0
@@ -43,19 +48,28 @@ INITIAL_DELAY = 3
     bgTexture dd 0
     bgSprite dd 0
     bgmusic dd 0
-    trackBounds sfFloatRect <>
     current_drum Drum <>
+    font dd 0
+    scoreText dd 0
+    scoreText_x dd 10.0
+    scoreText_y dd 10.0
+    judgementCircle dd 0
+    countdownText dd 0
+    countdownText_x dd 0.0
+    countdownText_y dd 0.0
+    countdownStr db 2 dup(?)
+    scoreString db 200 dup(?)
 
     ;Queue 相關
     index dd 0
 
     ; 時間相關
-    clock dd 0
+    spawnClock dd 0
     note_timer REAL4 0.0       ; 音符生成計時器
 
     ;譜面相關
-    bpm dd 113.65 ; 預設 BPM
-    currentNoteIndex dd 0
+    ;bpm dd 113.65 ; 預設 BPM
+    ;currentNoteIndex dd 0
 
     ; 視窗設定
     window_videoMode sfVideoMode <1280, 720, 32>
@@ -64,8 +78,9 @@ INITIAL_DELAY = 3
     ; 顏色常數
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
+    Transparent sfColor <0, 0, 0, 0>        ; 透明
 
-    ;initialPosition sfVector2f <SCREEN_WIDTH, 200.0>  ; 音符的 X 和 Y 座標
+    ;initialPosition sfVector2f <HIT_POSITION_X, 225>  ; 音符的 X 和 Y 座標
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     stats GameStats <>
 	msInfo MusicInfo <>
@@ -102,6 +117,11 @@ INITIAL_DELAY = 3
 	real_60 real4 60.0
 	real_4 real4 4.0
 	real_60000 real4 60000.0
+    real_36 real4 36.0
+    real_1000000 real4 1000000.0
+    real_1 real4 1.0
+    real_0 real4 0.0
+    real_85 real4 85.0
 
 
 .code
@@ -114,9 +134,9 @@ game_play_music PROC musicPath:PTR BYTE
     add esp, 4 
     mov bgMusic, eax
 
-    push eax
-    call sfMusic_play
-    add esp, 4
+    ;push eax
+    ;call sfMusic_play
+    ;add esp, 4
     ret
 game_play_music ENDP
 
@@ -563,11 +583,13 @@ enqueue PROC
 
     mov eax, current_drum.sprite      ; sprite
     mov ebx, current_drum._type       ; dtype
+    mov ecx, current_drum.targetTime  ; targetTime
 
     ; 儲存drum資料
     mov [edi], eax           ; sprite
     mov [edi + 4], ebx       ; dtype
-
+    mov [edi + 8], ecx       ; targetTime
+    
     ; 更新rear、size
     inc rear
     mov eax, rear
@@ -596,11 +618,12 @@ dequeue PROC
     ; 讀取 drum
     mov eax, [edi]           ;sprite
     mov ebx, [edi + 4]       ;dtype
+    mov ecx, [edi + 8]       ;targetTime
 
     ;釋放資源
     push eax
     call sfSprite_destroy
-    add esp, 4
+    add esp, 8
 
     ; 更新front、size
     inc front
@@ -615,12 +638,13 @@ end_dequeue:
     ret
 dequeue ENDP
 
-spawnDrum PROC             ;call前type要先load到eax
+spawnDrum PROC             ;call前type要先load到eax，、targetTime要先load到xmm0
     call isQueueFull
     cmp eax, 1
     je end_spawn
 
     mov current_drum._type, eax
+    movss current_drum.targetTime, xmm0
     call sfSprite_create
     mov DWORD PTR [current_drum.sprite], eax
 
@@ -658,15 +682,19 @@ updateDrums PROC
     call sfSprite_getPosition
     add esp, 8
 
-    movss spritePosX, xmm0
-    add spritePosX, 50
-    cmp spritePosX, 50
+    addss xmm0, [real_85]
+    mov eax, HIT_POSITION_X
+    cvtsi2ss xmm1, eax
+    comiss xmm0, xmm1
     jae end_update
 
     call dequeue
 
+    ;mov ecx, _size
+    ;mov ebx, front
     mov ecx, _size
-    mov ebx, front
+    mov edx, front
+    mov index, edx
 update_queue:
     ; 讀取 drum
     mov eax, [edi]           ;sprite
@@ -675,6 +703,7 @@ update_queue:
     call sfSprite_getPosition
     add esp, 8
     
+    movss spritePosY, xmm1
     movss xmm1, drumStep
     subss xmm0, xmm1
     movss spritePosX, xmm0
@@ -685,31 +714,168 @@ update_queue:
     call sfSprite_setPosition
     add esp, 12
 
-    inc ebx
-    mov eax, ebx
+    inc index
+    mov eax, index
     xor edx, edx
-    mov ecx, MAX_DRUMS
-    div ecx
-    mov ebx, edx
+    mov ebx, MAX_DRUMS
+    div ebx
+    mov index, edx
 loop update_queue
 
 end_update:
     ret
 updateDrums ENDP
 
+setup_scoreText PROC
+    call sfText_create
+    mov DWORD PTR [scoreText], eax
+   
+    push font
+    mov eax, DWORD PTR [scoreText]
+    push eax
+    call sfText_setFont
+    add esp, 8
+   
+    push 24
+    mov eax, DWORD PTR [scoreText]
+    push eax
+    call sfText_setCharacterSize
+    add esp, 8
+   
+    push blackColor
+    mov eax, DWORD PTR [scoreText]
+    push eax
+    call sfText_setFillColor
+    add esp, 8
+
+    movss xmm0, DWORD PTR [scoreText_y]  
+    movss xmm1, DWORD PTR [scoreText_x]    
+    sub esp, 8
+    movss DWORD PTR [esp], xmm1          
+    movss DWORD PTR [esp+4], xmm0    
+    push DWORD PTR [scoreText]      
+    call sfText_setPosition
+    add esp, 12
+    ret
+setup_scoreText ENDP
+
+createJudgementCircle PROC
+    call sfCircleShape_create
+    mov dword ptr [judgementCircle], eax
+
+    ;mov ebx, 30
+    ;push ebx
+    ;push dword ptr 30
+    push 30
+    push dword ptr [judgementCircle]
+    call sfCircleShape_setRadius
+    add esp, 8
+
+    ;push dword ptr [HIT_POSITION_Y] ; Y 座標
+    ;push dword ptr [HIT_POSITION_X]   ; X 座標
+    ;push eax
+    ;call sfCircleShape_setPosition
+    ;add esp, 12
+
+    ;push Transparent
+    ;push eax
+    ;call sfCircleShape_setFillColor
+    ;add esp, 8
+
+    ;push 2
+    ;push eax
+    ;call sfCircleShape_setOutlineThickness
+    ;add esp, 8
+
+    ;push blackColor
+    ;push eax
+    ;call sfCircleShape_setOutlineColor
+    ;add esp, 8
+    ret
+createJudgementCircle ENDP
+
+setup_countdownText PROC
+    call sfText_create
+    mov DWORD PTR [countdownText], eax
+   
+    push font
+    mov eax, DWORD PTR [countdownText]
+    push eax
+    call sfText_setFont
+    add esp, 8
+   
+    push 72
+    mov eax, DWORD PTR [countdownText]
+    push eax
+    call sfText_setCharacterSize
+    add esp, 8
+   
+    push blackColor
+    mov eax, DWORD PTR [countdownText]
+    push eax
+    call sfText_setFillColor
+    add esp, 8
+
+    fld dword ptr [SCREEN_WIDTH]    
+    fld1                            
+    fdiv                        
+    fsub dword ptr [real_36]  
+    fstp dword ptr [countdownText_x] 
+
+    ; 計算 TEXT_POSITION_Y
+    fld dword ptr [SCREEN_HEIGHT]    
+    fld1                            
+    fdiv                            
+    fsub dword ptr [real_36]        
+    fstp dword ptr [countdownText_y] 
+
+    movss xmm0, DWORD PTR [countdownText_y]  
+    movss xmm1, DWORD PTR [countdownText_x]    
+    sub esp, 8
+    movss DWORD PTR [esp], xmm1          
+    movss DWORD PTR [esp+4], xmm0    
+    push DWORD PTR [countdownText]      
+    call sfText_setPosition
+    add esp, 12
+
+    ret
+setup_countdownText ENDP
+
+drawUI PROC window:DWORD
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;snprintf
+    push offset scoreString
+    mov eax, DWORD PTR [scoreText]
+    push eax
+    call sfText_setString
+    add esp, 8
+
+    ;push 0
+    ;mov eax, DWORD PTR [judgementCircle]
+    ;push eax
+    ;mov ecx, DWORD PTR [window]
+    ;push ecx
+    ;call sfRenderWindow_drawCircleShape
+    ;add esp, 12                     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;error
+
+    push 0
+    push DWORD PTR [scoreText]
+    push DWORD PTR [window]
+    call sfRenderWindow_drawText
+    add esp, 12
+    ret
+drawUI ENDP
+
 main_game_page PROC window:DWORD, musicPath:dword, noteChart:dword
+    LOCAL currentNoteIndex: DWORD
+    LOCAL gameStartTime: REAL4
+    LOCAL gameStarted: DWORD
+    LOCAL countdown: DWORD
+    LOCAL currentTime: REAL4
 
-    ;載入譜面
-    push dword ptr [noteChart]
-	call ParseNoteChart
-	add esp, 4
-
-    ;載入音樂
-    push dword ptr [musicPath]
-    call game_play_music
-    add esp, 4
-    test eax, eax
-    jz @exit_program
+    push 60
+    push dword ptr [window]
+    call sfWindow_setFramerateLimit
+    add esp, 8
 
     ; 載入背景
     call @load_bg
@@ -726,26 +892,64 @@ main_game_page PROC window:DWORD, musicPath:dword, noteChart:dword
     test eax, eax
     jz @exit_program
 
-    ; 載入tja檔
-    ;push offset selected_beatmap_path
-    ;call parseNoteChart
+    ;載入字體
+    push offset font_path
+    call sfFont_createFromFile
+    add esp, 4
+    mov font, eax
+
+    ;初始化文字
+    call setup_scoreText
+    test eax, eax
+    jz @exit_program
+
+    ;創建判定圓
+    ;call createJudgementCircle
     ;test eax, eax
     ;jz @exit_program
+
+    ;倒數計時文字
+    call setup_countdownText
+    test eax, eax
+    jz @exit_program
+
+    ;載入音樂
+    push dword ptr [musicPath]
+    call game_play_music
+    add esp, 4
+    test eax, eax
+    jz @exit_program
+
+    push 0
+    push bgMusic
+    call sfMusic_setLoop
+    add esp, 8
+
+    ;載入譜面
+    push dword ptr [noteChart]
+	call ParseNoteChart
+	add esp, 4
 
     ; 初始化計時器
     call sfClock_create
     test eax, eax
     jz @exit_program
-    mov dword ptr [clock], eax
+    mov dword ptr [spawnClock], eax
+
+    mov currentNoteIndex, 0
+    mov eax, INITIAL_DELAY 
+    cvtsi2ss xmm0, eax
+    movss gameStartTime, xmm0
+    mov gameStarted, 0
 
 @main_loop:
 
     ; 檢查音樂是否停止
-    push bgMusic
-    call sfMusic_getStatus
-    add esp, 4
-    cmp eax, 0
-    je to_end_page
+    ;push bgMusic
+    ;call sfMusic_getStatus
+    ;add esp, 4
+    ;cmp eax, 0
+    ;je to_end_page
 
     ;檢查譜面是否跑完
     ;mov eax, currentNoteIndex
@@ -765,37 +969,124 @@ check_window:
     je @exit_program
 
     ; 更新計時器
-    push dword ptr [clock]
+    push dword ptr [spawnClock]
     call sfClock_getElapsedTime
     add esp, 4
-    test eax, eax
-    jz @exit_program 
-
+    
     cvtsi2ss xmm0, eax
-    movss xmm1, [const_1000] 
+    movss xmm1, [real_1000000] 
     divss xmm0, xmm1
-    movss xmm1, noteSpawnInterval
-    ucomiss xmm0, xmm1
-    jb update
+    movss xmm0, currentTime
 
+    ;fld dword ptr [real_1000000]
+    ;fild dword ptr [eax]
+    ;fdiv st(0), st(1)
+    ;fstp dword ptr [currentTime]
+
+    ;開始前倒數
+    mov eax, gameStarted
+    cmp eax, 1
+    je game_start
+    mov eax, INITIAL_DELAY 
+    cvtsi2ss xmm0, eax
+    movss xmm1, currentTime
+    subss xmm0, xmm1
+    addss xmm0, [real_1]
+    cvttss2si eax, xmm0 
+    mov countdown, eax
+
+    ;fild dword ptr [INITIAL_DELAY]
+    ;fld dword ptr [currentTime]
+    ;fsub                        
+    ;fld1                           
+    ;fadd                              
+    ;fistp dword ptr [countdown]
+
+    cmp eax, 0
+    jbe set_game_start
+    ;;;;;;;;;;;;;;;;;sprintf_s
+    push offset countdownStr
+    mov eax, DWORD PTR [countdownText]
+    push eax
+    call sfText_setString
+    add esp, 8
+    
+set_game_start:
+    push bgMusic
+    call sfMusic_getStatus
+    add esp, 4
+    cmp eax, 1
+    je clock_restart
+    movss xmm0, currentTime
+    movss xmm1, msInfo._offset
+    comiss xmm0, xmm1
+    jb clock_restart
+    movss xmm0, [real_0]
+    comiss xmm1, xmm0
+    jbe clock_restart
+    push bgMusic
+    call sfMusic_play
+    add esp, 4
+
+clock_restart:
+    push dword ptr [spawnClock]
+    call sfClock_restart
+    add esp, 4
+    fld dword ptr [real_0]
+    fstp dword ptr [gameStartTime]
+    movss xmm0, gameStartTime
+    mov gameStarted, 1
+    
+game_start:
+    push bgMusic
+    call sfMusic_getStatus
+    add esp, 4
+    cmp eax, 1
+    je event_loop
+    movss xmm0, currentTime
+    movss xmm1, msInfo._offset
+    subss xmm1, [real_0]
+    comiss xmm0, xmm1
+    jb event_loop
+    push bgMusic
+    call sfMusic_play
+    add esp, 4
+
+event_loop:
+
+    cmp gameStarted, 1
+    jne draw_notes
+    ; 更新計時器
+    push dword ptr [spawnClock]
+    call sfClock_getElapsedTime
+    add esp, 4
+    
+    cvtsi2ss xmm0, eax
+    movss xmm1, [real_1000000] 
+    divss xmm0, xmm1
+    movss xmm0, currentTime
+
+spawn_loop:
     mov eax, currentNoteIndex
     cmp eax, totalNotes
-    jae restart
-    lea edi, [notes]
-    add edi, eax
-    inc currentNoteIndex
-
-    mov eax, [edi]
-    cmp eax, 0
-    je restart
+    jae update
+    movss xmm0, [currentTime]  
+    mov eax, currentNoteIndex
+    movss xmm1, [noteTimings + eax*4] 
+    comiss xmm0, xmm1 
+    jb update
+    cmp notes[currentNoteIndex], 0
+    je increase_index
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;spawn
     call spawnDrum
-
-restart:
-    call sfClock_restart
-
+increase_index:
+    inc currentNoteIndex
+    jmp spawn_loop
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;update
 update:
     call updateDrums
 
+draw_notes:
     ; 清除視窗
     push blackColor
     push window
@@ -814,28 +1105,36 @@ update:
     mov ecx, _size
     mov edx, front
     mov index, edx
+
 draw_loop:
     ; 繪製鼓
-    lea edi, [drumQueue]
-    mov eax, index
-    mov edx, Drum_struct_size
-    mul edx
-    add edi, eax
 
     ;push 0
-    ;push edi
+    ;mov eax, index
+    ;push drumQueue[eax].sprite
     ;push DWORD PTR [window]
     ;call sfRenderWindow_drawSprite
-    ;add esp, 12                    ;error here
+    ;add esp, 12                    ;;;;;;;;;;;;;;;;;;;;;;;;;;error here
 
-    ;inc index
+    inc index
     mov eax, index
     xor edx, edx
     mov ebx, MAX_DRUMS
     div ebx
     mov index, edx
+    dec ecx
     cmp ecx, 0
-    je display_window
+    je draw_countdown
+
+
+draw_countdown:
+    cmp gameStarted, 1
+    je draw_UI
+
+draw_UI:
+    push dword ptr [window]
+    call drawUI
+    add esp, 4
 
 display_window:
     ; 顯示視窗
@@ -844,7 +1143,7 @@ display_window:
     call sfRenderWindow_display
     add esp, 4
 
-    jmp @main_loop
+jmp @main_loop
 
 ; 跳轉結算畫面
 to_end_page:
@@ -859,8 +1158,17 @@ to_end_page:
     mov DWORD PTR [currentPage], 2
     jmp @exit_program
 
+;釋放資源
 @exit_program:
 
+dequeue_loop:
+    call isQueueEmpty
+    cmp eax, 1
+    je release
+    call dequeue
+jmp dequeue_loop
+
+release:
     push bgSprite
     call sfSprite_destroy
     add esp, 4
@@ -877,7 +1185,7 @@ to_end_page:
     call sfTexture_destroy
     add esp, 4
 
-    push dword ptr [clock]
+    push dword ptr [spawnClock]
     call sfClock_destroy
     add esp, 4
 
