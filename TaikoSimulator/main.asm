@@ -9,7 +9,6 @@ extern main_page_proc: PROC
 extern end_game_page: PROC
 extern select_music_page: PROC
 extern main_game_page: PROC
-extern main_game_page: PROC
 
 public currentPage
 

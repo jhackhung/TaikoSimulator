@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/21/24 05:26:20
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/21/24 14:35:24
 main_game_page.asm					     Page 1 - 1
 
 
@@ -206,7 +206,21 @@ main_game_page.asm					     Page 1 - 1
 			      C 
 			      C 
 			      C 
-				;include ucrt.inc
+				include ucrt.inc
+			      C includelib ucrt.lib
+			      C 
+			      C extern fopen:proc
+			      C extern fclose:proc
+			      C extern fgets:proc
+			      C 
+			      C ;string
+			      C 
+			      C extern strcspn:proc
+			      C extern strncmp:proc
+			      C ;extern stdio_common_vsscanf:proc
+			      C extern strtok_s:proc
+			      C extern strlen:proc
+			      C 
 
 				extern currentPage: DWORD
 				extern create_button: PROC
@@ -389,22 +403,23 @@ main_game_page.asm					     Page 1 - 1
 				    ;讀檔相關
  0000AB0C 00000000		    stdout_handle dd 0
 
- 0000AB10 73 6F 6E 67 31	    filename db "song1_beatmap.tja", 0
-	   5F 62 65 61 74
-	   6D 61 70 2E 74
-	   6A 61 00
- 0000AB22 00000000		    hFile dd 0
- 0000AB26 00000000		    bytesRead dd 0
- 0000AB2A  00000400 [		    readBuffer db 1024 dup(0)
+ 0000AB10 61 73 73 65 74	    filename db "assets/main/test.txt", 0
+	   73 2F 6D 61 69
+	   6E 2F 74 65 73
+	   74 2E 74 78 74
+	   00
+ 0000AB25 00000000		    hFile dd 0
+ 0000AB29 00000000		    bytesRead dd 0
+ 0000AB2D  00000400 [		    readBuffer db 1024 dup(0)
 	    00
 	   ]
 
- 0000AF2A 52 65 61 64 20	    msgReadFail db "Read file failed.", 13, 10, 0
+ 0000AF2D 52 65 61 64 20	    msgReadFail db "Read file failed.", 13, 10, 0
 	   66 69 6C 65 20
 	   66 61 69 6C 65
 	   64 2E 0D 0A 00
 
- 0000AF3E 46 69 6C 65 20	    msgReadSuccess db "File content:", 13, 10, 0
+ 0000AF41 46 69 6C 65 20	    msgReadSuccess db "File content:", 13, 10, 0
 	   63 6F 6E 74 65
 	   6E 74 3A 0D 0A
 	   00
@@ -429,10 +444,10 @@ main_game_page.asm					     Page 1 - 1
  0000001C  8B F4		    mov esi, esp
 
  0000001E  6A 00		    push 0
- 00000020  68 0000AB26 R	    push offset bytesRead
+ 00000020  68 0000AB29 R	    push offset bytesRead
  00000025  68 00000400		    push 1024
- 0000002A  68 0000AB2A R	    push offset readBuffer
- 0000002F  FF 35 0000AB22 R	    push [hFile]
+ 0000002A  68 0000AB2D R	    push offset readBuffer
+ 0000002F  FF 35 0000AB25 R	    push [hFile]
  00000035  E8 00000000 E	    call ReadFile@20
  0000003A  83 C4 14		    add esp, 20
 
@@ -466,6 +481,12 @@ main_game_page.asm					     Page 1 - 1
  00000076			@load_bg ENDP
 
  00000076			parseNoteChart PROC
+
+				    ;push 0
+				    ;push dword ptr [filename]
+				    ;call fopen
+				    ;add esp, 8
+
  00000076  8D 35 000000AA R	    lea esi, [beatmapString]
  0000007C  8D 3D 00000E98 R	    lea edi, [notes]
  00000082  33 C9		    xor ecx, ecx 
@@ -709,27 +730,27 @@ main_game_page.asm					     Page 1 - 1
 				    ; 載入背景
  0000029D  E8 FFFFFD9E		    call @load_bg
  000002A2  85 C0		    test eax, eax
- 000002A4  0F 84 00000199	    jz @exit_program
+ 000002A4  0F 84 0000017B	    jz @exit_program
 
 				    ; 載入紅鼓紋理
  000002AA  E8 FFFFFE19		    call @load_red_texture
  000002AF  85 C0		    test eax, eax
- 000002B1  0F 84 0000018C	    jz @exit_program
+ 000002B1  0F 84 0000016E	    jz @exit_program
 
 				    ; 載入藍鼓紋理
  000002B7  E8 FFFFFE21		    call @load_blue_texture
  000002BC  85 C0		    test eax, eax
- 000002BE  0F 84 0000017F	    jz @exit_program
+ 000002BE  0F 84 00000161	    jz @exit_program
 
 				    ;載入音樂
  000002C4  E8 FFFFFD37		    call game_play_music
  000002C9  85 C0		    test eax, eax
- 000002CB  0F 84 00000172	    jz @exit_program
+ 000002CB  0F 84 00000154	    jz @exit_program
 
 				    ;載入譜面
  000002D1  E8 FFFFFDA0		    call parseNoteChart
  000002D6  85 C0		    test eax, eax
- 000002D8  0F 84 00000165	    jz @exit_program
+ 000002D8  0F 84 00000147	    jz @exit_program
 
 				    ; 載入tja檔
 				    ;push offset selected_beatmap_path
@@ -740,7 +761,7 @@ main_game_page.asm					     Page 1 - 1
 				    ; 初始化計時器
  000002DE  E8 00000000 E	    call sfClock_create
  000002E3  85 C0		    test eax, eax
- 000002E5  0F 84 00000158	    jz @exit_program
+ 000002E5  0F 84 0000013A	    jz @exit_program
  000002EB  A3 00000E88 R	    mov dword ptr [clock], eax
 
  000002F0			@main_loop:
@@ -750,149 +771,151 @@ main_game_page.asm					     Page 1 - 1
  000002F6  E8 00000000 E	    call sfMusic_getStatus
  000002FB  83 C4 04		    add esp, 4
  000002FE  83 F8 00		    cmp eax, 0
- 00000301  0F 84 0000010D	    je to_end_page
+ 00000301  0F 84 000000EF	    je to_end_page
 
 				    ;檢查譜面是否跑完
- 00000307  A1 0000AADC R	    mov eax, currentNoteIndex
- 0000030C  3B 05 0000AAD8 R	    cmp eax, totalNotes
- 00000312  72 0E		    jb check_window
- 00000314  E8 FFFFFDEE		    call isQueueEmpty
- 00000319  83 F8 01		    cmp eax, 1
- 0000031C  0F 84 000000F2	    je to_end_page
+				    ;mov eax, currentNoteIndex
+				    ;cmp eax, totalNotes
+				    ;jb check_window
+				    ;call isQueueEmpty
+				    ;cmp eax, 1
+				    ;je to_end_page
 
- 00000322			check_window:
+ 00000307			check_window:
 				    ; 檢查視窗是否開啟
- 00000322  8B 45 08		    mov eax, DWORD PTR [window]
- 00000325  50			    push eax
- 00000326  E8 00000000 E	    call sfRenderWindow_isOpen
- 0000032B  83 C4 04		    add esp, 4
- 0000032E  85 C0		    test eax, eax
- 00000330  0F 84 0000010D	    je @exit_program
+ 00000307  8B 45 08		    mov eax, DWORD PTR [window]
+ 0000030A  50			    push eax
+ 0000030B  E8 00000000 E	    call sfRenderWindow_isOpen
+ 00000310  83 C4 04		    add esp, 4
+ 00000313  85 C0		    test eax, eax
+ 00000315  0F 84 0000010A	    je @exit_program
 
 				    ; 更新計時器
- 00000336  FF 35 00000E88 R	    push [clock]
- 0000033C  E8 00000000 E	    call sfClock_getElapsedTime
- 00000341  83 C4 04		    add esp, 4
- 00000344  85 C0		    test eax, eax
- 00000346  0F 84 000000F7	    jz @exit_program 
+ 0000031B  FF 35 00000E88 R	    push [clock]
+ 00000321  E8 00000000 E	    call sfClock_getElapsedTime
+ 00000326  83 C4 04		    add esp, 4
+ 00000329  85 C0		    test eax, eax
+ 0000032B  0F 84 000000F4	    jz @exit_program 
 
- 0000034C  BB 000003E8		    mov ebx, 1000 
- 00000351  33 D2		    xor edx, edx
- 00000353  F7 F3		    div ebx
- 00000355  3B 05 00000E94 R	    cmp eax, noteSpawnInterval
- 0000035B  72 2C		    jb update
+ 00000331  BB 000003E8		    mov ebx, 1000 
+ 00000336  33 D2		    xor edx, edx
+ 00000338  F7 F3		    div ebx
+ 0000033A  3B 05 00000E94 R	    cmp eax, noteSpawnInterval
+ 00000340  72 2C		    jb update
 
- 0000035D  A1 0000AADC R	    mov eax, currentNoteIndex
- 00000362  3B 05 0000AAD8 R	    cmp eax, totalNotes
- 00000368  73 1A		    jae restart
- 0000036A  8D 3D 00000E98 R	    lea edi, [notes]
- 00000370  03 F8		    add edi, eax
- 00000372  FF 05 0000AADC R	    inc currentNoteIndex
+ 00000342  A1 0000AADC R	    mov eax, currentNoteIndex
+ 00000347  3B 05 0000AAD8 R	    cmp eax, totalNotes
+ 0000034D  73 1A		    jae restart
+ 0000034F  8D 3D 00000E98 R	    lea edi, [notes]
+ 00000355  03 F8		    add edi, eax
+ 00000357  FF 05 0000AADC R	    inc currentNoteIndex
 
- 00000378  8B 07		    mov eax, [edi]
- 0000037A  83 F8 00		    cmp eax, 0
- 0000037D  74 05		    je restart
- 0000037F  E8 FFFFFE34		    call spawnDrum
+ 0000035D  8B 07		    mov eax, [edi]
+ 0000035F  83 F8 00		    cmp eax, 0
+ 00000362  74 05		    je restart
+ 00000364  E8 FFFFFE4F		    call spawnDrum
 
- 00000384			restart:
- 00000384  E8 00000000 E	    call sfClock_restart
+ 00000369			restart:
+ 00000369  E8 00000000 E	    call sfClock_restart
 
- 00000389			update:
- 00000389  E8 FFFFFE71		    call updateDrums
+ 0000036E			update:
+ 0000036E  E8 FFFFFE8C		    call updateDrums
 
 				    ; 清除視窗
- 0000038E  FF 35 0000AB00 R	    push blackColor
- 00000394  FF 75 08		    push window
- 00000397  E8 00000000 E	    call sfRenderWindow_clear
- 0000039C  83 C4 08		    add esp, 8
+ 00000373  FF 35 0000AB00 R	    push blackColor
+ 00000379  FF 75 08		    push window
+ 0000037C  E8 00000000 E	    call sfRenderWindow_clear
+ 00000381  83 C4 08		    add esp, 8
 
 				    ; 繪製背景
- 0000039F  6A 00		    push 0
- 000003A1  A1 000001D0 R	    mov eax, DWORD PTR [bgSprite]
- 000003A6  50			    push eax
- 000003A7  8B 4D 08		    mov ecx, DWORD PTR [window]
- 000003AA  51			    push ecx
- 000003AB  E8 00000000 E	    call sfRenderWindow_drawSprite
- 000003B0  83 C4 0C		    add esp, 12
+ 00000384  6A 00		    push 0
+ 00000386  A1 000001D0 R	    mov eax, DWORD PTR [bgSprite]
+ 0000038B  50			    push eax
+ 0000038C  8B 4D 08		    mov ecx, DWORD PTR [window]
+ 0000038F  51			    push ecx
+ 00000390  E8 00000000 E	    call sfRenderWindow_drawSprite
+ 00000395  83 C4 0C		    add esp, 12
 
- 000003B3  8B 0D 00000E80 R	    mov ecx, qsize
- 000003B9  8B 15 00000E78 R	    mov edx, front
- 000003BF  89 15 00000E84 R	    mov index, edx
- 000003C5			draw_loop:
+ 00000398  8B 0D 00000E80 R	    mov ecx, qsize
+ 0000039E  8B 15 00000E78 R	    mov edx, front
+ 000003A4  89 15 00000E84 R	    mov index, edx
+ 000003AA			draw_loop:
 				    ; 繪製鼓
- 000003C5  8D 3D 000001DC R	    lea edi, [drumQueue]
- 000003CB  A1 00000E84 R	    mov eax, index
- 000003D0  BA 00000008		    mov edx, Drum_struct_size
- 000003D5  F7 E2		    mul edx
- 000003D7  03 F8		    add edi, eax
+ 000003AA  8D 3D 000001DC R	    lea edi, [drumQueue]
+ 000003B0  A1 00000E84 R	    mov eax, index
+ 000003B5  BA 00000008		    mov edx, Drum_struct_size
+ 000003BA  F7 E2		    mul edx
+ 000003BC  03 F8		    add edi, eax
 
- 000003D9  6A 00		    push 0
- 000003DB  57			    push edi
- 000003DC  FF 75 08		    push DWORD PTR [window]
- 000003DF  E8 00000000 E	    call sfRenderWindow_drawSprite
- 000003E4  83 C4 0C		    add esp, 12
+ 000003BE  6A 00		    push 0
+ 000003C0  57			    push edi
+ 000003C1  FF 75 08		    push DWORD PTR [window]
+ 000003C4  E8 00000000 E	    call sfRenderWindow_drawSprite
+ 000003C9  83 C4 0C		    add esp, 12
 
- 000003E7  FF 05 00000E84 R	    inc index
- 000003ED  A1 00000E84 R	    mov eax, index
- 000003F2  33 D2		    xor edx, edx
- 000003F4  B9 00000064		    mov ecx, MAX_DRUMS
- 000003F9  F7 F1		    div ecx
- 000003FB  89 15 00000E84 R	    mov index, edx
- 00000401  E2 C2		loop draw_loop
+				    ;inc index
+ 000003CC  A1 00000E84 R	    mov eax, index
+ 000003D1  33 D2		    xor edx, edx
+ 000003D3  BB 00000064		    mov ebx, MAX_DRUMS
+ 000003D8  F7 F3		    div ebx
+ 000003DA  89 15 00000E84 R	    mov index, edx
+ 000003E0  83 F9 00		    cmp ecx, 0
+ 000003E3  74 00		    je display_window
 
+ 000003E5			display_window:
 				    ; 顯示視窗
- 00000403  8B 45 08		    mov eax, window
- 00000406  50			    push eax
- 00000407  E8 00000000 E	    call sfRenderWindow_display
- 0000040C  83 C4 04		    add esp, 4
+ 000003E5  8B 45 08		    mov eax, window
+ 000003E8  50			    push eax
+ 000003E9  E8 00000000 E	    call sfRenderWindow_display
+ 000003EE  83 C4 04		    add esp, 4
 
- 0000040F  E9 FFFFFEDC		    jmp @main_loop
+ 000003F1  E9 FFFFFEFA		    jmp @main_loop
 
 				; 跳轉結算畫面
- 00000414			to_end_page:
+ 000003F6			to_end_page:
 				    ;遊戲結束要切換到結尾畫面
- 00000414  FF 35 000001C8 R	    push score    
- 0000041A  FF 35 000001C4 R	    push miss_count    
- 00000420  FF 35 000001C0 R	    push good_count   
- 00000426  FF 35 000001BC R	    push great_count    
- 0000042C  FF 75 08		    push window        
- 0000042F  E8 00000000 E	    call end_game_page
- 00000434  83 C4 14		    add esp, 20
- 00000437  C7 05 00000000 E	    mov DWORD PTR [currentPage], 2
+ 000003F6  FF 35 000001C8 R	    push score    
+ 000003FC  FF 35 000001C4 R	    push miss_count    
+ 00000402  FF 35 000001C0 R	    push good_count   
+ 00000408  FF 35 000001BC R	    push great_count    
+ 0000040E  FF 75 08		    push window        
+ 00000411  E8 00000000 E	    call end_game_page
+ 00000416  83 C4 14		    add esp, 20
+ 00000419  C7 05 00000000 E	    mov DWORD PTR [currentPage], 2
 	   00000002
- 00000441  EB 00		    jmp @exit_program
+ 00000423  EB 00		    jmp @exit_program
 
- 00000443			@exit_program:
+ 00000425			@exit_program:
 
- 00000443  FF 35 000001D0 R	    push bgSprite
- 00000449  E8 00000000 E	    call sfSprite_destroy
- 0000044E  83 C4 04		    add esp, 4
+ 00000425  FF 35 000001D0 R	    push bgSprite
+ 0000042B  E8 00000000 E	    call sfSprite_destroy
+ 00000430  83 C4 04		    add esp, 4
 
- 00000451  FF 35 000001CC R	    push bgTexture
- 00000457  E8 00000000 E	    call sfTexture_destroy
- 0000045C  83 C4 04		    add esp, 4
+ 00000433  FF 35 000001CC R	    push bgTexture
+ 00000439  E8 00000000 E	    call sfTexture_destroy
+ 0000043E  83 C4 04		    add esp, 4
 
- 0000045F  FF 35 000001D4 R	    push redDrumTexture
- 00000465  E8 00000000 E	    call sfTexture_destroy
- 0000046A  83 C4 04		    add esp, 4
+ 00000441  FF 35 000001D4 R	    push redDrumTexture
+ 00000447  E8 00000000 E	    call sfTexture_destroy
+ 0000044C  83 C4 04		    add esp, 4
 
- 0000046D  FF 35 000001D8 R	    push blueDrumTexture
- 00000473  E8 00000000 E	    call sfTexture_destroy
- 00000478  83 C4 04		    add esp, 4
+ 0000044F  FF 35 000001D8 R	    push blueDrumTexture
+ 00000455  E8 00000000 E	    call sfTexture_destroy
+ 0000045A  83 C4 04		    add esp, 4
 
- 0000047B  FF 35 00000E88 R	    push dword ptr [clock]
- 00000481  E8 00000000 E	    call sfClock_destroy
- 00000486  83 C4 04		    add esp, 4
+ 0000045D  FF 35 00000E88 R	    push dword ptr [clock]
+ 00000463  E8 00000000 E	    call sfClock_destroy
+ 00000468  83 C4 04		    add esp, 4
 
- 00000489  FF 35 00000E5C R	    push bgMusic
- 0000048F  E8 00000000 E	    call sfMusic_destroy
- 00000494  83 C4 04		    add esp, 4
+ 0000046B  FF 35 00000E5C R	    push bgMusic
+ 00000471  E8 00000000 E	    call sfMusic_destroy
+ 00000476  83 C4 04		    add esp, 4
 				    
 				    ret
- 00000499			main_game_page ENDP
+ 0000047B			main_game_page ENDP
 
 				END main_game_page
-Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/21/24 05:26:20
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/21/24 14:35:24
 main_game_page.asm					     Symbols 2 - 1
 
 
@@ -951,8 +974,8 @@ Segments and Groups:
                 N a m e                 Size     Length   Align   Combine Class
 
 FLAT . . . . . . . . . . . . . .	GROUP
-_DATA  . . . . . . . . . . . . .	32 Bit	 0000AF4E Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 00000499 Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000AF51 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000047B Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -971,15 +994,16 @@ isQueueEmpty . . . . . . . . . .	P Near	 00000107 _TEXT	Length= 00000015 Public 
   queue_empty  . . . . . . . . .	L Near	 00000116 _TEXT	
 isQueueFull  . . . . . . . . . .	P Near	 000000F2 _TEXT	Length= 00000015 Public C
   queue_full . . . . . . . . . .	L Near	 00000101 _TEXT	
-main_game_page . . . . . . . . .	P Near	 0000029A _TEXT	Length= 000001FF Public C
+main_game_page . . . . . . . . .	P Near	 0000029A _TEXT	Length= 000001E1 Public C
   window . . . . . . . . . . . .	DWord	 bp + 00000008
   @main_loop . . . . . . . . . .	L Near	 000002F0 _TEXT	
-  check_window . . . . . . . . .	L Near	 00000322 _TEXT	
-  restart  . . . . . . . . . . .	L Near	 00000384 _TEXT	
-  update . . . . . . . . . . . .	L Near	 00000389 _TEXT	
-  draw_loop  . . . . . . . . . .	L Near	 000003C5 _TEXT	
-  to_end_page  . . . . . . . . .	L Near	 00000414 _TEXT	
-  @exit_program  . . . . . . . .	L Near	 00000443 _TEXT	
+  check_window . . . . . . . . .	L Near	 00000307 _TEXT	
+  restart  . . . . . . . . . . .	L Near	 00000369 _TEXT	
+  update . . . . . . . . . . . .	L Near	 0000036E _TEXT	
+  draw_loop  . . . . . . . . . .	L Near	 000003AA _TEXT	
+  display_window . . . . . . . .	L Near	 000003E5 _TEXT	
+  to_end_page  . . . . . . . . .	L Near	 000003F6 _TEXT	
+  @exit_program  . . . . . . . .	L Near	 00000425 _TEXT	
 parseNoteChart . . . . . . . . .	P Near	 00000076 _TEXT	Length= 00000052 Public C
   parse_loop . . . . . . . . . .	L Near	 00000084 _TEXT	
   next_char  . . . . . . . . . .	L Near	 0000009A _TEXT	
@@ -1035,7 +1059,7 @@ blackColor . . . . . . . . . . .	sfColor	 0000AB00 _DATA
 blueDrumTexture  . . . . . . . .	DWord	 000001D8 _DATA	
 blue_drum_path . . . . . . . . .	Byte	 00000039 _DATA	
 bpm  . . . . . . . . . . . . . .	DWord	 00000E90 _DATA	
-bytesRead  . . . . . . . . . . .	DWord	 0000AB26 _DATA	
+bytesRead  . . . . . . . . . . .	DWord	 0000AB29 _DATA	
 clock  . . . . . . . . . . . . .	DWord	 00000E88 _DATA	
 const_60000  . . . . . . . . . .	DWord	 000001B4 _DATA	
 create_button  . . . . . . . . .	L Near	 00000000 FLAT	External C
@@ -1044,22 +1068,25 @@ currentPage  . . . . . . . . . .	DWord	 00000000 FLAT	External C
 current_drum . . . . . . . . . .	Drum	 00000E70 _DATA	
 drumQueue  . . . . . . . . . . .	DWord	 000001DC _DATA	
 end_game_page  . . . . . . . . .	L Near	 00000000 FLAT	External C
+fclose . . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
+fgets  . . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
 filename . . . . . . . . . . . .	Byte	 0000AB10 _DATA	
+fopen  . . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
 four . . . . . . . . . . . . . .	DWord	 000001B8 _DATA	
 front  . . . . . . . . . . . . .	DWord	 00000E78 _DATA	
 good_count . . . . . . . . . . .	DWord	 000001C0 _DATA	
 great_count  . . . . . . . . . .	DWord	 000001BC _DATA	
-hFile  . . . . . . . . . . . . .	DWord	 0000AB22 _DATA	
+hFile  . . . . . . . . . . . . .	DWord	 0000AB25 _DATA	
 index  . . . . . . . . . . . . .	DWord	 00000E84 _DATA	
 initialPosition  . . . . . . . .	sfVector2f  0000AB04 _DATA	
 miss_count . . . . . . . . . . .	DWord	 000001C4 _DATA	
-msgReadFail  . . . . . . . . . .	Byte	 0000AF2A _DATA	
-msgReadSuccess . . . . . . . . .	Byte	 0000AF3E _DATA	
+msgReadFail  . . . . . . . . . .	Byte	 0000AF2D _DATA	
+msgReadSuccess . . . . . . . . .	Byte	 0000AF41 _DATA	
 noteSpawnInterval  . . . . . . .	DWord	 00000E94 _DATA	
 note_timer . . . . . . . . . . .	DWord	 00000E8C _DATA	
 notes  . . . . . . . . . . . . .	DWord	 00000E98 _DATA	
 qsize  . . . . . . . . . . . . .	DWord	 00000E80 _DATA	
-readBuffer . . . . . . . . . . .	Byte	 0000AB2A _DATA	
+readBuffer . . . . . . . . . . .	Byte	 0000AB2D _DATA	
 rear . . . . . . . . . . . . . .	DWord	 00000E7C _DATA	
 redDrumTexture . . . . . . . . .	DWord	 000001D4 _DATA	
 red_drum_path  . . . . . . . . .	Byte	 00000020 _DATA	
@@ -1150,6 +1177,10 @@ sfTrue . . . . . . . . . . . . .	Number	 00000001h
 spritePosX . . . . . . . . . . .	DWord	 000001AC _DATA	
 spritePosY . . . . . . . . . . .	DWord	 000001B0 _DATA	
 stdout_handle  . . . . . . . . .	DWord	 0000AB0C _DATA	
+strcspn  . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
+strlen . . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
+strncmp  . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
+strtok_s . . . . . . . . . . . .	L Near	 00000000 FLAT	External C
 totalNotes . . . . . . . . . . .	DWord	 0000AAD8 _DATA	
 trackBounds  . . . . . . . . . .	sfFloatRect  00000E60 _DATA	
 track_height . . . . . . . . . .	DWord	 0000019C _DATA	

@@ -1,7 +1,7 @@
 .model flat, c
 include csfml.inc
 include windows.inc
-;include ucrt.inc
+include ucrt.inc
 
 extern currentPage: DWORD
 extern create_button: PROC
@@ -91,7 +91,7 @@ Drum ENDS
     ;讀檔相關
     stdout_handle dd 0
 
-    filename db "song1_beatmap.tja", 0
+    filename db "assets/main/test.txt", 0
     hFile dd 0
     bytesRead dd 0
     readBuffer db 1024 dup(0)
@@ -157,6 +157,12 @@ readFile ENDP
 @load_bg ENDP
 
 parseNoteChart PROC
+
+    ;push 0
+    ;push dword ptr [filename]
+    ;call fopen
+    ;add esp, 8
+
     lea esi, [beatmapString]
     lea edi, [notes]
     xor ecx, ecx 
@@ -433,12 +439,12 @@ main_game_page PROC window:DWORD
     je to_end_page
 
     ;檢查譜面是否跑完
-    mov eax, currentNoteIndex
-    cmp eax, totalNotes
-    jb check_window
-    call isQueueEmpty
-    cmp eax, 1
-    je to_end_page
+    ;mov eax, currentNoteIndex
+    ;cmp eax, totalNotes
+    ;jb check_window
+    ;call isQueueEmpty
+    ;cmp eax, 1
+    ;je to_end_page
 
 check_window:
     ; 檢查視窗是否開啟
@@ -510,16 +516,18 @@ draw_loop:
     push edi
     push DWORD PTR [window]
     call sfRenderWindow_drawSprite
-    add esp, 12
+    add esp, 12                    ;error here
 
-    inc index
+    ;inc index
     mov eax, index
     xor edx, edx
-    mov ecx, MAX_DRUMS
-    div ecx
+    mov ebx, MAX_DRUMS
+    div ebx
     mov index, edx
-loop draw_loop
+    cmp ecx, 0
+    je display_window
 
+display_window:
     ; 顯示視窗
     mov eax, window
     push eax
