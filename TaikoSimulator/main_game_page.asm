@@ -3,6 +3,11 @@
 .model flat, c
 include csfml.inc
 include file.inc
+includelib kernel32.lib
+
+extern GetStdHandle@4: PROC
+extern WriteConsoleA@20:PROC
+STD_OUTPUT_HANDLE EQU -11
 
 extern end_game_page: PROC
 extern currentPage: DWORD
@@ -19,6 +24,7 @@ GOOD_THRESHOLD = 30
 INITIAL_DELAY = 3
 
 .data
+	consoleHandle dd ?
 	event sfEvent <>
 
 	chart db "assets/game/yoasobi.txt", 0
@@ -30,7 +36,7 @@ INITIAL_DELAY = 3
 	msInfo MusicInfo <>
 
 	; queue for drums
-	drumQueue dword MAX_DRUMS dup(0) ; 存放Drum結構指針
+	drumQueue dword MAX_DRUMS dup(?) ; 存放Drum結構指針
 	front dword 0
 	rear dword 0
 	_size dword 0
@@ -239,7 +245,7 @@ ParseNoteChart PROC filename:DWORD
 
 	; init variables
 	mov inNoteSection, 0
-	fldz ; currentTime 0
+	fldz ; l_currentTime 0
 
 	; open file
 	push offset readA
@@ -409,36 +415,41 @@ ParseNoteChart PROC filename:DWORD
 		fdiv validNotes
 		fstp noteInterval  ; noteInterval = barTime / validNotes
 
-		mov eax, i
-		xor eax, eax
-		mov i, eax
-		mov edx, bar
+		mov ecx, 0
+		mov esi, bar
+        
 	NoteLoop:
-		mov eax, i
-		cmp eax, barlength
+		cmp ecx, barlength
 		jge ProcessNextBar
 
-		mov eax, [edx]
+		mov al, [esi+ecx]
 		cmp al, '0'
-		jbe SkipToNextNote
+		jb SkipToNextNote
 		cmp al, '2'
 		ja SkipToNextNote
+        cmp al, '0'
+        je updateTime
 
 		; store note and timing
-		mov eax, totalNotes
-		mov notes[eax], eax
-		fld l_currentTIme
-		fstp noteTimings[eax*4]
+        sub al, '0'
+        mov ebx, totalNotes
+        mov edi, offset notes
+		mov [edi+ebx], eax
+
+        mov eax, dword ptr [l_currentTime]
+        mov edi, offset noteTimings
+        mov [edi+ebx], eax
+
 		inc totalNotes
 
+    updateTime:
+        fld l_currentTIme
+        fld noteInterval
+        fadd
+		fstp l_currentTIme
+
 	SkipToNextNote:
-		fld l_currentTIme
-		fld noteInterval
-		fadd
-		fstp l_currentTIme
-		fstp l_currentTIme
-		inc i
-		inc edx
+		inc ecx
 		jmp NoteLoop
 
 	ProcessNextBar:
@@ -455,7 +466,8 @@ ParseNoteChart PROC filename:DWORD
 
 		jmp ParseLineLoop
 
-	EndParse:
+	EndParse
+
 		push filePtr
 		call fclose
 		add esp, 4
@@ -1199,8 +1211,8 @@ deter_offset:
 	add esp, 4
 
 @end_game:
-    push stats.total_score
     push stats.max_combo
+    push stats.total_score
     push stats.miss_count
     push stats.good_count
     push stats.great_count

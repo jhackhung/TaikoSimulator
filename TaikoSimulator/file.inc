@@ -26,7 +26,6 @@ MusicInfo struct
 MusicInfo ends
 
 extern malloc:proc
-
 extern fopen:proc
 extern fclose:proc
 extern fgets:proc
