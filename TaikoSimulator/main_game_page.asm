@@ -26,16 +26,7 @@ INITIAL_DELAY = 3
     selected_beatmap_path db "assets/music/song1_beatmap.tja", 0
 
     ;盽计
-    MAX_DRUMS equ 100 
-    Drum_struct_size equ 8     ; Drum 挡篶
-    MAX_NOTES equ 10000
-    MAX_LINE_LENGTH equ 1000
-    SCREEN_HEIGHT equ 720
-    DRUM_SPEED dd 0.5
-    track_height REAL4 100.0
-    track_width REAL4 1280.0
-    track_x REAL4 640.0
-    track_y REAL4 200.0
+    Drum_struct_size equ 12     ; Drum 挡篶
     spritePosX    dd 0.0
     spritePosY    dd 0.0
     const_60000 dd 60000.0
@@ -116,8 +107,9 @@ INITIAL_DELAY = 3
 .code
 
 ;冀贾
-game_play_music PROC
-    push offset selected_music_path
+game_play_music PROC musicPath:PTR BYTE
+    mov eax, [musicPath]
+    push musicPath          
     call sfMusic_createFromFile
     add esp, 4 
     mov bgMusic, eax
@@ -152,6 +144,125 @@ game_play_music ENDP
     add esp, 12
     ret
 @load_bg ENDP
+
+parseString proc
+    push ebp
+    mov ebp, esp
+    sub esp, 8                           ; 既跋
+
+    ; ﹍て把计
+    mov esi, dword ptr [ebp+8]           ; esi = inputStr
+    mov edi, dword ptr [ebp+12]          ; edi = formatStr
+    mov eax, 1                           ; 箇砞Θ
+
+    ; 秆猂Αて﹃
+next_format:
+    lodsb                                ; 更Α﹃い才 al
+    cmp al, 0                            ; 浪琩琌﹃挡Ю
+    je parse_done                        ; 狦﹃挡Ю秆猂ЧΘ
+
+    cmp al, '%'                          ; 浪琩琌Αて才腹 '%'
+    jne skip_format                      ; 狦ぃ琌 '%', 铬筁
+
+    lodsb                                ; Αて才腹
+    cmp al, 'd'                          ; 浪琩琌 %d
+    je parse_int
+    cmp al, 's'                          ; 浪琩琌 %s
+    je parse_string
+    cmp al, 'f'                          ; 浪琩琌 %f
+    je parse_float
+    jmp parse_error                      ; ぃやΑ铬锣岿粇
+
+skip_format:
+    lodsb                                ; 膥尿才
+    jmp next_format
+
+; 秆猂俱计 (%d)
+parse_int:
+    mov ebx, dword ptr [ebp+16]          ; ebx = intResult
+    xor ecx, ecx                         ; ecx = 0 (俱计挡狦)
+parse_int_loop:
+    lodsb                                ; 更才
+    cmp al, '0'                          ; 浪琩琌计
+    jb parse_done_int                    ; 狦ぃ琌计挡
+    cmp al, '9'
+    ja parse_done_int
+    sub al, '0'                          ; 盢才锣计
+    imul ecx, ecx, 10                    ; ecx = ecx * 10
+    add ecx, eax                         ; ecx = ecx + 计
+    jmp parse_int_loop
+parse_done_int:
+    stosd                                ; 纗挡狦 intResult
+    jmp next_format
+
+; 秆猂﹃ (%s)
+parse_string:
+    mov ebx, dword ptr [ebp+20]          ; ebx = strResult
+parse_string_loop:
+    lodsb                                ; 更才
+    cmp al, ' '                          ; 笿┪挡才
+    je parse_done_str
+    stosb                                ; 纗才 strResult
+    jmp parse_string_loop
+parse_done_str:
+    mov byte ptr [ebx], 0                ; 睰﹃挡Ю才
+    jmp next_format
+
+; 秆猂疊翴计 (%f)
+parse_float:
+    mov ebx, dword ptr [ebp+24]          ; ebx = floatResult
+    xor edx, edx                         ; edx = 计场だ计璸计竟
+    xor ecx, ecx                         ; ecx = 俱计场だ
+    mov ebp, 0                           ; ebp = 计场だ
+
+parse_float_loop:
+    lodsb                                ; 更才
+    cmp al, '.'                          ; 浪琩琌琌计翴
+    je parse_fraction
+    cmp al, '0'                          ; 浪琩琌计
+    jb parse_done_float                  ; 狦ぃ琌计挡
+    cmp al, '9'
+    ja parse_done_float
+    sub al, '0'                          ; 盢才锣计
+    imul ecx, ecx, 10                    ; ecx = ecx * 10
+    add ecx, eax                         ; ecx = ecx + 计
+    jmp parse_float_loop
+
+parse_fraction:
+    lodsb                                ; 更计场だ材才
+    cmp al, '0'                          ; 浪琩琌计
+    jb parse_done_float
+    cmp al, '9'
+    ja parse_done_float
+    sub al, '0'                          ; 盢才锣计
+    imul ebp, ebp, 10                    ; ebp = ebp * 10
+    add ebp, eax                         ; ebp = ebp + 计
+    inc edx                              ; 计场だ计 +1
+    jmp parse_fraction
+
+parse_done_float:
+    ; 璸衡程沧疊翴计
+    mov eax, 1
+    mov cl, dl
+    shl eax, cl                         ; eax = 10^计场だ计
+    fild dword ptr [ecx]                 ; 更俱计场だ疊翴盚竟
+    fidiv dword ptr [eax]                ; 俱计场だ埃 10^计计
+    fistp dword ptr [ebx]                ; 纗挡狦 floatResult
+    jmp next_format
+
+; 矪瞶岿粇
+parse_error:
+    xor eax, eax                         ; ア毖
+    jmp parse_exit
+
+parse_done:
+    mov eax, 1                           ; Θ
+
+parse_exit:
+    mov esp, ebp
+    pop ebp
+    ret
+parseString endp
 
 ParseNoteChart PROC filename:PTR BYTE
 	LOCAL filePtr:PTR FILE
@@ -215,7 +326,7 @@ ParseLineLoop:
 	push offset msInfo.bpm
 	push offset getBmp
 	push dword ptr [line]
-	;call dword ptr __imp____stdio_common_vsscanf
+	call parseString
 	add esp, 12
 
 	jmp ParseLineLoop
@@ -234,7 +345,7 @@ CheckOffset:
 	push msInfo._offset
 	push offset getOffset
 	push dword ptr [line]
-	;call dword ptr __imp____stdio_common_vsscanf
+	call parseString
 	add esp, 12
 
 	jmp ParseLineLoop
@@ -564,7 +675,7 @@ update_queue:
     call sfSprite_getPosition
     add esp, 8
     
-    movss xmm1, DRUM_SPEED
+    movss xmm1, drumStep
     subss xmm0, xmm1
     movss spritePosX, xmm0
 
@@ -587,10 +698,18 @@ end_update:
 updateDrums ENDP
 
 main_game_page PROC window:DWORD, musicPath:dword, noteChart:dword
-    
+
+    ;更眯
     push dword ptr [noteChart]
 	call ParseNoteChart
 	add esp, 4
+
+    ;更贾
+    push dword ptr [musicPath]
+    call game_play_music
+    add esp, 4
+    test eax, eax
+    jz @exit_program
 
     ; 更璉春
     call @load_bg
@@ -604,16 +723,6 @@ main_game_page PROC window:DWORD, musicPath:dword, noteChart:dword
 
     ; 更屡躬瞶
     call @load_blue_texture
-    test eax, eax
-    jz @exit_program
-
-    ;更贾
-    call game_play_music
-    test eax, eax
-    jz @exit_program
-
-    ;更眯
-    call parseNoteChart
     test eax, eax
     jz @exit_program
 
@@ -713,11 +822,11 @@ draw_loop:
     mul edx
     add edi, eax
 
-    push 0
-    push edi
-    push DWORD PTR [window]
-    call sfRenderWindow_drawSprite
-    add esp, 12                    ;error here
+    ;push 0
+    ;push edi
+    ;push DWORD PTR [window]
+    ;call sfRenderWindow_drawSprite
+    ;add esp, 12                    ;error here
 
     ;inc index
     mov eax, index
