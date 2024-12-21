@@ -37,7 +37,7 @@ extern currentPage: DWORD
     opacity dd 043700000r ; 240.0
     minOpacity dd 042480000r ; 50.0
     maxOpacity dd 043700000r ; 240.0
-    deltaOpacity dd 0bdcccccdr ; -0.1
+    deltaOpacity dd -2.5 ; -0.1
     textColor sfColor <>
     outlineColor sfColor <>
     

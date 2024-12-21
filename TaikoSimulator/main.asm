@@ -44,8 +44,14 @@ main PROC
     ; 初始化程式
     mov currentPage, 0   ; 將當前頁面設為主頁
     call create_window
+
     test eax, eax
     jz end_program
+
+    push 60
+    push dword ptr [window]
+    call sfWindow_setFramerateLimit
+    add esp, 8
 
 game_loop:
     ; 根據 currentPage 決定呼叫的程序
