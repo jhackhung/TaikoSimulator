@@ -19,6 +19,9 @@ window_title db "Taiko Simulator", 0
 window dd 0
 window_videoMode sfVideoMode <1280, 720, 32>
 
+music1_path db "assets/main/Yoru ni Kakeru.ogg", 0
+beatmap1_path db "assets/main/yoasobi.txt", 0
+
 playing_music db 0
 .code
 
@@ -86,9 +89,11 @@ call_select_music_page:
 	jmp game_loop
 
 call_main_game_page:
+    push DWORD PTR [beatmap1_path]
+    push DWORD PTR [music1_path]
 	push DWORD PTR [window]
 	call main_game_page
-	add esp, 4
+	add esp, 12
 	jmp game_loop
 
 call_end_game_page:

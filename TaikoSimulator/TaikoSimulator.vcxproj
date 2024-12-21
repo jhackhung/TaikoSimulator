@@ -162,7 +162,7 @@
   <ItemGroup>
     <None Include="..\..\..\..\Downloads\windows.inc" />
     <None Include="csfml.inc" />
-    <None Include="ucrt.inc" />
+    <None Include="file.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

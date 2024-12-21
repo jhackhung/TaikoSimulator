@@ -1,22 +1,21 @@
 .model flat, c
 include csfml.inc
 include windows.inc
-include ucrt.inc
+include file.inc
 
 extern currentPage: DWORD
-extern create_button: PROC
 EXTERN end_game_page:PROC
-;EXTERN fopen: PROC
 
-GENERIC_READ equ 80000000h
-FILE_ATTRIBUTE_NORMAL equ 80h
-STD_OUTPUT_HANDLE equ -11
-
-; Drum 結構
-Drum STRUCT
-    sprite dd 0
-    dtype dd 0      ; 1 = 紅色鼓, 2 = 藍色鼓
-Drum ENDS
+; Constants
+MAX_NOTES = 10000
+MAX_LINE_LENGTH = 1000
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
+MAX_DRUMS = 100
+HIT_POSITION_X = 450
+GREAT_THRESHOLD = 4
+GOOD_THRESHOLD = 30
+INITIAL_DELAY = 3
 
 .data
     ; 檔案路徑
@@ -26,14 +25,11 @@ Drum ENDS
     selected_music_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
     selected_beatmap_path db "assets/music/song1_beatmap.tja", 0
 
-    beatmapString db "1001201000102010,1001202000002222,1001201000102000,0000000000112212,1001201110102010,1001201110202222,1001201110102010,1020200022112212,1010211010102000,1011211010202000,1011202010100010,3000404000000000,1010211010102000,1011211010202000", 0
-
     ;常數
     MAX_DRUMS equ 100 
     Drum_struct_size equ 8     ; Drum 結構大小
     MAX_NOTES equ 10000
     MAX_LINE_LENGTH equ 1000
-    SCREEN_WIDTH equ 1280.0
     SCREEN_HEIGHT equ 720
     DRUM_SPEED dd 0.5
     track_height REAL4 100.0
@@ -43,6 +39,7 @@ Drum ENDS
     spritePosX    dd 0.0
     spritePosY    dd 0.0
     const_60000 dd 60000.0
+    const_1000 dd 1000.0
     four dd 4.0
 
     ;用來存great good miss 的次數和最後總分
@@ -54,17 +51,11 @@ Drum ENDS
     ; CSFML 物件
     bgTexture dd 0
     bgSprite dd 0
-    redDrumTexture dd 0
-    blueDrumTexture dd 0
-    drumQueue dd MAX_DRUMS * Drum_struct_size DUP(0)
     bgmusic dd 0
     trackBounds sfFloatRect <>
     current_drum Drum <>
 
     ;Queue 相關
-    front dd 0
-    rear dd 0
-    qsize dd 0
     index dd 0
 
     ; 時間相關
@@ -73,9 +64,6 @@ Drum ENDS
 
     ;譜面相關
     bpm dd 113.65 ; 預設 BPM
-    noteSpawnInterval dd 0.0  ; 音符生成間隔 (毫秒)
-    notes dd MAX_NOTES DUP(0) ; 儲存音符數據
-    totalNotes dd 0
     currentNoteIndex dd 0
 
     ; 視窗設定
@@ -86,19 +74,44 @@ Drum ENDS
     whiteColor sfColor <255, 255, 255, 255> ; 白色
     blackColor sfColor <0, 0, 0, 255>       ; 黑色
 
-    initialPosition sfVector2f <SCREEN_WIDTH, 200.0>  ; 音符的 X 和 Y 座標
+    ;initialPosition sfVector2f <SCREEN_WIDTH, 200.0>  ; 音符的 X 和 Y 座標
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    stats GameStats <>
+	msInfo MusicInfo <>
 
-    ;讀檔相關
-    stdout_handle dd 0
+	; queue for drums
+	drumQueue Drum MAX_DRUMS dup(<>)
+	front dword 0
+	rear dword 0
+	_size dword 0
 
-    filename db "assets/main/test.txt", 0
-    hFile dd 0
-    bytesRead dd 0
-    readBuffer db 1024 dup(0)
+	; texture
+	redDrumTexture dword ?
+	blueDrumTexture dword ?
 
-    msgReadFail db "Read file failed.", 13, 10, 0
+	notes dword MAX_NOTES dup(?)
+	totalNotes dword 0
+	noteSpawnInterval real4 0.0
+	noteTimings real4 MAX_NOTES dup(?)
+	drumStep real4 0.25
 
-    msgReadSuccess db "File content:", 13, 10, 0
+	; file
+	readA byte "r", 0
+
+	;label
+	str_bpm db "BPM:", 0
+	str_offset db "OFFSET:", 0
+	str_start db "#START", 0
+	str_end db "#END", 0
+	comma db ",", 0
+
+	getBmp db "BMP:%f", 0
+	getOffset db "OFFSET:%f", 0
+
+	real_60 real4 60.0
+	real_4 real4 4.0
+	real_60000 real4 60000.0
+
 
 .code
 
@@ -114,22 +127,6 @@ game_play_music PROC
     add esp, 4
     ret
 game_play_music ENDP
-
-; 讀取文件內容
-readFile PROC
-    mov esi, esp
-
-    push 0
-    push offset bytesRead
-    push 1024
-    push offset readBuffer
-    push [hFile]
-    call ReadFile@20
-    add esp, 20
-
-    mov esp, esi
-    ret
-readFile ENDP
 
 ; 載入背景
 @load_bg PROC
@@ -156,46 +153,245 @@ readFile ENDP
     ret
 @load_bg ENDP
 
-parseNoteChart PROC
+ParseNoteChart PROC filename:PTR BYTE
+	LOCAL filePtr:PTR FILE
+	LOCAL line[256]:BYTE
+	LOCAL inNoteSection:DWORD
+	LOCAL bar:PTR BYTE
+	LOCAL context:ptr byte
+	local barlength:DWORD
+	local validNotes:DWORD
+	local i:DWORD
+	local note:byte
+	local currentTIme:real4
+	local beatTime:real4
+	local barTime:real4
+	local noteInterval:real4
 
-    ;push 0
-    ;push dword ptr [filename]
-    ;call fopen
-    ;add esp, 8
+	; init variables
+	mov inNoteSection, 0
+	fldz ; currentTime 0
 
-    lea esi, [beatmapString]
-    lea edi, [notes]
-    xor ecx, ecx 
+	; open file
+	push offset readA
+	push filename
+	call fopen
+	add esp, 8
 
-parse_loop:
-    mov al, [esi]
-    cmp al, 0 
-    je parse_end
+	test eax, eax
+	jz FileOpenError
+	mov filePtr, eax
 
-    cmp al, '0'
-    jb next_char
-    cmp al, '2'
-    ja next_char
+ParseLineLoop:
+	; read first line
+	push filePtr
+	push 256
+	push dword ptr [line]
+	call fgets
+	add esp, 12
 
-    sub al, '0'
-    mov [edi], al
-    inc edi 
-    inc ecx 
-    jmp next_char
+	test eax, eax
+	jz EndParse
 
-next_char:
-    inc esi
-    jmp parse_loop
+	; remove \n
+	push 10
+	push dword ptr [line]
+	call strcspn
+	add esp, 8
 
-parse_end:
-    mov totalNotes, ecx
-    movss xmm0, [const_60000]
-    movss xmm1, [bpm]
-    mulss xmm1, [four]
-    divss xmm0, xmm1
-    movss [noteSpawnInterval], xmm0
-    ret
-parseNoteChart ENDP
+	movzx ecx, al
+	mov byte ptr [line + ecx], 0
+
+	; check bpm
+	push 4
+	push offset str_bpm
+	push dword ptr [line]
+	call strncmp
+	add esp, 12
+
+	test eax, eax
+	jnz CheckOffset
+	
+	push offset msInfo.bpm
+	push offset getBmp
+	push dword ptr [line]
+	;call dword ptr __imp____stdio_common_vsscanf
+	add esp, 12
+
+	jmp ParseLineLoop
+
+	; check offset
+	
+CheckOffset:
+	push 7
+	push offset str_offset
+	push dword ptr [line]
+	call strncmp
+	add esp, 12
+
+	test eax, eax
+	jnz CheckStart
+	push msInfo._offset
+	push offset getOffset
+	push dword ptr [line]
+	;call dword ptr __imp____stdio_common_vsscanf
+	add esp, 12
+
+	jmp ParseLineLoop
+
+CheckStart:
+	push 6
+	push offset str_start
+	push dword ptr [line]
+	call strncmp
+	add esp, 12
+
+	test eax, eax
+	jnz CheckEnd
+	mov inNoteSection, 1
+	jmp ParseLineLoop
+
+CheckEnd:
+	push 4
+	push offset str_end
+	push dword ptr [line]
+	call strncmp
+	add esp, 12
+
+	test eax, eax
+	jz EndParse
+	
+	cmp inNoteSection, 1
+	jnz ParseLineLoop
+
+	; allocate notes
+	push context
+	push dword ptr [comma]
+	push dword ptr [line]
+	call strtok_s
+	add esp, 12
+
+	test eax, eax
+	jz ParseLineLoop
+
+	mov bar, eax
+
+ProcessBar:
+	; get bar length
+	push bar
+	call strlen
+	add esp, 4
+
+	mov barlength, eax
+
+	; get valid notes
+	mov validNotes, 0
+	mov ecx, barlength
+
+	mov eax, i
+	xor eax, eax
+	mov i, eax
+CountValidNotes:
+	cmp i, ecx
+	jge ComputeNoteTiming
+	movzx eax, byte ptr [bar + i]
+	cmp al, '0'
+	jb SkipNote
+	cmp al, '2'
+	ja SkipNote
+	inc validNotes
+SkipNote:
+	inc i
+	jmp CountValidNotes
+
+ComputeNoteTiming:
+	; check if there are notes in the bar
+	mov eax, validNotes
+	cmp eax, 0
+	je ProcessNextBar
+
+	; calculate note time
+	fld dword ptr [msInfo.bpm]
+	fld1
+	fdiv
+	fmul dword ptr [real_60]
+	fstp beatTime	; beatTime = 60 / bpm
+	fmul dword ptr [real_4]
+	fstp barTime	; barTime = 4 * beatTime
+	fld barTIme
+	fdiv validNotes
+	fstp noteInterval  ; noteInterval = barTime / validNotes
+
+	mov eax, i
+	xor eax, eax
+	mov i, eax
+
+NoteLoop:
+	mov eax, i
+    cmp eax, barlength
+	jge ProcessNextBar
+	movzx eax, byte ptr [bar + i]
+	cmp al, '0'
+	jbe SkipToNextNote
+	cmp al, '2'
+	ja SkipToNextNote
+
+	; store note and timing
+	mov eax, totalNotes
+	mov notes[eax], eax
+	fld currentTIme
+	fstp noteTimings[eax*4]
+	inc totalNotes
+
+SkipToNextNote:
+    fld currentTime
+	fld noteInterval
+	fadd
+	fstp currentTime
+	inc i
+	jmp NoteLoop
+
+ProcessNextBar:
+    push context
+	push dword ptr [comma]
+	push 0
+	call strtok_s
+	add esp, 12
+
+	test eax, eax
+	jnz ProcessBar
+	mov bar, eax
+
+	jmp ParseLineLoop
+
+EndParse:
+	push filePtr
+	call fclose
+	add esp, 4
+
+	fld dword ptr [msInfo.bpm]
+	fmul dword ptr [real_4]
+	fld1
+	fdiv
+	fmul dword ptr [real_60000]
+	fstp noteSpawnInterval
+
+	mov eax, SCREEN_WIDTH
+	sub eax, HIT_POSITION_X
+
+	push eax
+	fild dword ptr [esp]
+	add esp, 4
+
+	fld dword ptr [barTime]
+	fdiv
+	fstp dword ptr [drumStep]
+
+	ret
+
+FileOpenError:
+	ret
+ParseNoteChart ENDP
 
 ; 載入紅鼓紋理
 @load_red_texture PROC
@@ -219,7 +415,7 @@ parseNoteChart ENDP
 
 ;full會return 1
 isQueueFull PROC
-    mov eax, qsize
+    mov eax, _size
     cmp eax, MAX_DRUMS
     je queue_full
     mov eax, 0
@@ -231,7 +427,7 @@ isQueueFull ENDP
 
 ;empty會return 1
 isQueueEmpty PROC
-    mov eax, qsize
+    mov eax, _size
     cmp eax, 0
     je queue_empty
     mov eax, 0
@@ -255,7 +451,7 @@ enqueue PROC
     add edi, eax 
 
     mov eax, current_drum.sprite      ; sprite
-    mov ebx, current_drum.dtype       ; dtype
+    mov ebx, current_drum._type       ; dtype
 
     ; 儲存drum資料
     mov [edi], eax           ; sprite
@@ -268,7 +464,7 @@ enqueue PROC
     mov ecx, MAX_DRUMS
     div ecx
     mov rear, edx
-    inc qsize
+    inc _size
 
 end_enqueue:
     ret
@@ -302,7 +498,7 @@ dequeue PROC
     mov ecx, MAX_DRUMS
     div ecx
     mov front, edx
-    dec qsize
+    dec _size
 
 end_dequeue:
     ret
@@ -313,11 +509,11 @@ spawnDrum PROC             ;call前type要先load到eax
     cmp eax, 1
     je end_spawn
 
-    mov current_drum.dtype, eax
+    mov current_drum._type, eax
     call sfSprite_create
     mov DWORD PTR [current_drum.sprite], eax
 
-    cmp current_drum.dtype, 1
+    cmp current_drum._type, 1
     je spawnRed
     call @load_blue_texture
 
@@ -325,8 +521,8 @@ spawnRed:
     call @load_red_texture
 
     ;設定位置
-    push dword ptr [initialPosition+4] ; Y 座標
-    push dword ptr [initialPosition]   ; X 座標
+    push 200 ; Y 座標
+    push SCREEN_WIDTH   ; X 座標
     push eax
     call sfSprite_setPosition
     add esp, 12
@@ -338,7 +534,7 @@ end_spawn:
 spawnDrum ENDP
 
 updateDrums PROC
-    cmp qsize, 0
+    cmp _size, 0
     jbe end_update
     
     lea edi, [drumQueue]
@@ -358,7 +554,7 @@ updateDrums PROC
 
     call dequeue
 
-    mov ecx, qsize
+    mov ecx, _size
     mov ebx, front
 update_queue:
     ; 讀取 drum
@@ -390,7 +586,11 @@ end_update:
     ret
 updateDrums ENDP
 
-main_game_page PROC window:DWORD
+main_game_page PROC window:DWORD, musicPath:dword, noteChart:dword
+    
+    push dword ptr [noteChart]
+	call ParseNoteChart
+	add esp, 4
 
     ; 載入背景
     call @load_bg
@@ -456,16 +656,17 @@ check_window:
     je @exit_program
 
     ; 更新計時器
-    push [clock]
+    push dword ptr [clock]
     call sfClock_getElapsedTime
     add esp, 4
     test eax, eax
     jz @exit_program 
 
-    mov ebx, 1000 
-    xor edx, edx
-    div ebx
-    cmp eax, noteSpawnInterval
+    cvtsi2ss xmm0, eax
+    movss xmm1, [const_1000] 
+    divss xmm0, xmm1
+    movss xmm1, noteSpawnInterval
+    ucomiss xmm0, xmm1
     jb update
 
     mov eax, currentNoteIndex
@@ -501,7 +702,7 @@ update:
     call sfRenderWindow_drawSprite
     add esp, 12
 
-    mov ecx, qsize
+    mov ecx, _size
     mov edx, front
     mov index, edx
 draw_loop:
