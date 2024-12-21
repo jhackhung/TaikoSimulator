@@ -5,12 +5,22 @@
 include csfml.inc
 
 extern currentPage: DWORD
-extern ReadFile@20: PROC
 extern create_button: PROC
+extern GetStdHandle@4:PROC
+extern CreateFileA@28:PROC
+extern WriteFile@20:PROC
+extern ReadFile@20:PROC
+extern ExitProcess@4:PROC
+extern CloseHandle@4:PROC
+extern WriteConsoleA@20:PROC
+extern GetLastError@0:PROC
 
-GENERIC_READ equ 80000000h
-FILE_ATTRIBUTE_NORMAL equ 80h
+; 定義常量
+GENERIC_READ         EQU 0x80000000
+FILE_SHARE_READ      EQU 0x00000001
 STD_OUTPUT_HANDLE equ -11
+OPEN_EXISTING        EQU 3
+FILE_ATTRIBUTE_NORMAL EQU 0x00000080
 
 BUTTON_STATE_NORMAL equ 0
 BUTTON_STATE_PRESSED equ 1
@@ -31,8 +41,12 @@ Drum ENDS
     bg_path db "assets/main/game_background.jpg", 0
     red_drum_path db "assets/main/red_note.png", 0
     blue_drum_path db "assets/main/blue_note.png", 0
-    selected_music_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
+    selected_music_path db "assets/main/song1.ogg", 0
     selected_beatmap_path db "assets/music/song1_beatmap.tja", 0
+    selectedMusicPath db "assets/main/song2.ogg", 0
+    selectedBeatmapPath db "assets/main/song1.tja", 0
+    red_note_sound_path db "assets/main/RedNote.wav", 0
+    blue_note_sound_path db "assets/main/BlueNote.wav", 0
 
     ;常數
     MAX_DRUMS equ 100 
@@ -51,10 +65,7 @@ Drum ENDS
     outline_thickness REAL4 3.0
 
 
-    selectedMusicPath db "assets/main/song1.ogg", 0
-    selectedBeatmapPath db "assets/main/song1.tja", 0
-    red_note_sound_path db "assets/main/RedNote.wav", 0
-    blue_note_sound_path db "assets/main/BlueNote.wav", 0
+
 
     ; CSFML 物件
     bgTexture dd 0
@@ -108,25 +119,41 @@ Drum ENDS
     initialPosition sfVector2f <SCREEN_WIDTH, 200.0>  ; 音符的 X 和 Y 座標
     ;movePosition sfVector2f <-0.1, 0.0>
 
+
+    ; 音符相關
+    notes db 256 DUP(0)
+    noteTimings REAL4 256 DUP(0.0)
+
     ;讀檔相關
     stdout_handle dd 0
 
-    filename db "song1_beatmap.tja", 0
+    filename db "rickroll.txt", 0
     hFile dd 0
     bytesRead dd 0
     readBuffer db 1024 dup(0)
 
-    msgReadFail db "Read file failed.", 13, 10, 0
+    musicInfo_bpm REAL4 0.0
+    musicInfo_offset REAL4 0.0
 
+    lineBuffer db MAX_LINE_LENGTH DUP(0)
+    noteSection db 0
+    currentTime REAL4 0.0
+
+    bpmTag db "BPM:", 0
+    offsetTag db "OFFSET:", 0
+    startTag db "#START", 0
+    endTag db "#END", 0
+    comma db ",", 0
+
+    drumSpeed REAL4 0.0
+    drumStep REAL4 0.0
+
+    msgReadFail db "Read file failed.", 13, 10, 0
     msgReadSuccess db "File content:", 13, 10, 0
 
 
     notePosition sfVector2f <1200.0, 200.0>  ; 音符的 X 和 Y 座標
     movePosition sfVector2f <-0.1, 0.0>
-    notes db 256 DUP(0)
-    lineBuffer db 256 DUP(0)
-    startTag db "#START", 0
-    endTag db "#END", 0
     
      ; 判定窗口 (以毫秒計)
     hitWindowGreat DWORD 35   ; "Great" 判定範圍
@@ -138,6 +165,8 @@ Drum ENDS
     good_count DWORD 0
     miss_count DWORD 0
     score DWORD 0
+
+   
 
 .code
 
@@ -154,21 +183,7 @@ game_play_music PROC
     ret
 game_play_music ENDP
 
-; 讀取文件內容
-readFile PROC
-    mov esi, esp
 
-    push 0
-    push offset bytesRead
-    push 1024
-    push offset readBuffer
-    push [hFile]
-    call ReadFile@20
-    add esp, 20
-
-    mov esp, esi
-    ret
-readFile ENDP
 
 ; 載入背景
 @load_bg PROC
@@ -451,6 +466,7 @@ end_update:
     ret
 updateDrums ENDP
 
+;播放音效
 rednote_sound PROC
     push offset red_note_sound_path
     call sfMusic_createFromFile
@@ -474,6 +490,22 @@ bluenote_sound PROC
     add esp, 4
     ret
 bluenote_sound ENDP
+
+readFile PROC
+    ; 讀取文件內容
+    mov esi, esp
+
+    push 0
+    push offset bytesRead
+    push 1024
+    push offset readBuffer
+    push [hFile]
+    call ReadFile@20
+    add esp, 20
+
+    mov esp, esi
+    ret
+readFile ENDP
 
 main_game_page PROC window:DWORD
 
@@ -508,6 +540,8 @@ main_game_page PROC window:DWORD
     ;test eax, eax
     ;jz @exit_program
     ;mov clock, eax
+
+   
 
 @main_loop:
 
@@ -570,11 +604,11 @@ main_game_page PROC window:DWORD
     
         ; 檢查關閉事件
         cmp dword ptr [esi].sfEvent._type, sfEvtClosed
-        je @to_end_page
+        je @skip_generate_note
 
         ; 檢查滑鼠點擊
         cmp dword ptr [esi].sfEvent._type, sfEvtMouseButtonPressed
-        je @skip_generate_note
+        je @to_end_page
     
         ; 檢查鍵盤事件
         cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
@@ -586,6 +620,9 @@ main_game_page PROC window:DWORD
             cmp dword ptr [esi+4], sfKeyA
             je @key_A_pressed
 
+            cmp dword ptr [esi+4], sfKeyS
+            je @key_S_pressed 
+
             cmp dword ptr [esi+4], sfKeyD
             je @key_D_pressed 
             
@@ -593,29 +630,32 @@ main_game_page PROC window:DWORD
 
 @key_A_pressed:
     mov dword ptr [KeyA_state], 1 ; 設定狀態已按下 
+    mov dword ptr [KeyS_state], 0
     mov dword ptr [KeyD_state], 0
     call rednote_sound
     push eax
     add esp, 4
     ; delete the the latest note
-    jmp @main_loop
+    jmp @event_loop
 
 @key_S_pressed:
     mov dword ptr [KeyS_state], 1 ; 設定狀態已按下
     mov dword ptr [KeyA_state], 0
-   mov dword ptr [KeyD_state], 0
-    mov DWORD PTR [currentPage], 3
+    mov dword ptr [KeyD_state], 0
+    push eax
+    add esp, 4
     jmp @to_end_page
 
 
 @key_D_pressed:
     mov dword ptr [KeyD_state], 1 ; 設定狀態已按下
     mov dword ptr [KeyA_state], 0
+    mov dword ptr [KeyS_state], 0
     call bluenote_sound
     push eax
     add esp, 4
     ; delete the the latest note
-    jmp @main_loop
+    jmp @event_loop
        
 
 @skip_generate_note:
@@ -666,7 +706,7 @@ main_game_page PROC window:DWORD
 ;@next_draw:
     ;inc esi
     ;jmp @draw_notes_loop
-;@end_draw_notes:
+@end_draw_notes:
 
     ; 顯示視窗
     mov eax, window
@@ -691,6 +731,7 @@ main_game_page PROC window:DWORD
 
 
 @exit_program:
+
     ;call @cleanup_notes
 
     push bgSprite
@@ -717,6 +758,12 @@ main_game_page PROC window:DWORD
     ;call sfRectangleShape_destroy
     ;add esp, 4
 
+    push bgMusic
+    call sfMusic_destroy
+    add esp, 4
+
+    @end:
+    xor eax, eax
     ret
 main_game_page ENDP
 

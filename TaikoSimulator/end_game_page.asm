@@ -919,6 +919,11 @@ end_cleanup ENDP
 
 end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count:DWORD, score:DWORD
 
+    ;pop great_count
+    ;pop good_count
+    ;pop miss_count
+    ;pop score
+
     mov eax, great_count
     mov countGreat, eax
     mov eax, good_count
