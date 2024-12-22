@@ -8,7 +8,7 @@ include csfml.inc
 extern main_page_proc: PROC
 extern end_game_page: PROC
 extern select_music_page: PROC
-extern main_game_page: PROC
+extern main_game_page2: PROC
 
 public currentPage
 
@@ -97,7 +97,7 @@ call_main_game_page:
     push dword ptr [test_chart]
     push dword ptr [playing_music]
 	push DWORD PTR [window]
-	call main_game_page
+	call main_game_page2
 	add esp, 12
 	jmp game_loop
 

@@ -5,8 +5,12 @@
     <MASM Include="main_page.asm" />
     <MASM Include="end_game_page.asm" />
     <MASM Include="select_music_page.asm" />
+    <MASM Include="main_game_page.asm" />
+    <MASM Include="main_game_page2.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include="csfml.inc" />
+    <None Include="file.inc" />
+    <None Include="game.inc" />
   </ItemGroup>
 </Project>

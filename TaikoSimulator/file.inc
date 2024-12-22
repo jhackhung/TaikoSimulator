@@ -1,6 +1,7 @@
-includelib ucrt.lib
+includelib libucrt.lib
+includelib libvcruntime.lib
 includelib kernel32.lib
-
+includelib libcmt.lib
 
 Drum struct
 	sprite dword ?

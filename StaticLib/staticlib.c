@@ -1,8 +1,6 @@
-// StaticLib.cpp : Defines the functions for the static library.
+// StaticLib.c : Defines the functions for the static library.
 //
 
-#include "pch.h"
-#include "framework.h"
 #include <SFML/Graphics.h>
 #include <SFML/Window.h>
 #include <SFML/System.h>
@@ -42,26 +40,27 @@ typedef struct {
     int notesInBar;   // 目前小節的音符數量
 } MusicInfo;
 
-GameStats stats = { 0, 0, 0, 0, 0, 0 };
+//GameStats stats = { 0, 0, 0, 0, 0, 0 };
 
-MusicInfo musicInfo = { 0 };
+//MusicInfo musicInfo = { 0 };
 
-Drum drumQueue[MAX_DRUMS];
-int front = 0;
-int rear = 0;
-int size = 0;
-sfTexture* redDrumTexture;
-sfTexture* blueDrumTexture;
+//Drum drumQueue[MAX_DRUMS];
+//int front = 0;
+//int rear = 0;
+//int size = 0;
+//sfTexture* redDrumTexture;
+//sfTexture* blueDrumTexture;
 
-int notes[MAX_NOTES];
-int totalNotes = 0;
-float noteSpawnInterval; // 根據BPM計算的生成間隔
-float noteTimings[MAX_NOTES];  // 每個音符的生成時間
-float drumStep = 0.25f;
+//int notes[MAX_NOTES];
+//int totalNotes = 0;
+//float noteSpawnInterval; // 根據BPM計算的生成間隔
+//float noteTimings[MAX_NOTES];  // 每個音符的生成時間
+//float drumStep = 0.25f;
 
 
 // TODO: This is an example of a library function
-void parseNoteChart(const char* filename) {
+void parseNoteChart(const char* filename, int* totalNotes, MusicInfo* musicInfo, int* notes, float* noteTimings, int* noteSpawnInterval, float* drumStep) {
+
     FILE* file = fopen(filename, "r");
     if (!file) {
         printf("無法開啟檔案！\n");
@@ -70,7 +69,7 @@ void parseNoteChart(const char* filename) {
 
     char line[MAX_LINE_LENGTH];
     int inNoteSection = 0;
-    totalNotes = 0;
+    *totalNotes = 0;
 
     float currentTime = 0.0f; // 紀錄當前音符生成的時間
     char* context;
@@ -79,12 +78,12 @@ void parseNoteChart(const char* filename) {
         line[strcspn(line, "\n")] = 0; // 移除換行符號
 
         if (strncmp(line, "BPM:", 4) == 0) {
-            sscanf_s(line, "BPM:%f", &musicInfo.bpm);
+            sscanf_s(line, "BPM:%f", &musicInfo->bpm);
             continue;
         }
 
         if (strncmp(line, "OFFSET:", 7) == 0) {
-            sscanf_s(line, "OFFSET:%f", &musicInfo.offset);
+            sscanf_s(line, "OFFSET:%f", &musicInfo->offset);
             //currentTime = musicInfo.offset; // 初始化時間為偏移量
             continue;
         }
@@ -112,7 +111,7 @@ void parseNoteChart(const char* filename) {
                 }
 
                 if (validNotes > 0) {
-                    float beatTime = 60.0f / musicInfo.bpm;  // 一拍時間
+                    float beatTime = 60.0f / musicInfo->bpm;  // 一拍時間
                     //float barTime = validNotes / beatTime;  // 小節總時間
                     float barTime = 4 * beatTime; // 假設一小節是4拍
                     float noteInterval = barTime / validNotes; // 單音符時間
@@ -121,9 +120,9 @@ void parseNoteChart(const char* filename) {
                         char note = bar[i];
                         if (note >= '0' && note <= '2') {
                             if (note != '0') { // 排除空拍
-                                notes[totalNotes] = note - '0';
-                                noteTimings[totalNotes] = currentTime;
-                                totalNotes++;
+                                notes[*totalNotes] = note - '0';
+                                noteTimings[*totalNotes] = currentTime;
+                                (*totalNotes)++;
                             }
                             currentTime += noteInterval; // 更新當前時間
                         }
@@ -142,46 +141,46 @@ void parseNoteChart(const char* filename) {
     fclose(file);
 
     // 音符生成間隔
-    noteSpawnInterval = 60000.0f / (musicInfo.bpm * 4.0f);
+    *noteSpawnInterval = 60000.0f / (musicInfo->bpm * 4.0f);
 
-    float drumSpeed = (SCREEN_WIDTH - HIT_POSITION_X) / (4 * 60.0f / musicInfo.bpm);
-    drumStep = drumSpeed / 60;
+    float drumSpeed = (SCREEN_WIDTH - HIT_POSITION_X) / (4 * 60.0f / musicInfo->bpm);
+    *drumStep = drumSpeed / 60;
     //printf("drumStep: %f drumSpeed: %f\n", drumStep, drumSpeed);
 
     //printf("BPM: %f, OFFSET: %f, 音符生成間隔: %f毫秒\n", musicInfo.bpm, musicInfo.offset, noteSpawnInterval);
 }
 
 
-int isQueueFull() {
+int isQueueFull(int size) {
     return size == MAX_DRUMS;
 }
 
-int isQueueEmpty() {
+int isQueueEmpty(int size) {
     return size == 0;
 }
 
-void enqueue(Drum drum) {
-    if (isQueueFull()) {
+void enqueue(Drum drum, int* size, Drum* drumQueue, int* rear) {
+    if (isQueueFull(*size)) {
         printf("Queue is full!\n");
         return;
     }
-    drumQueue[rear] = drum;
-    rear = (rear + 1) % MAX_DRUMS;
-    size++;
+    drumQueue[*rear] = drum;
+    *rear = (*rear + 1) % MAX_DRUMS;
+    (*size)++;
 }
 
-void dequeue() {
-    if (isQueueEmpty()) {
+void dequeue(int* size, Drum* drumQueue, int* front) {
+    if (isQueueEmpty(*size)) {
         printf("Queue is empty!\n");
         return;
     }
-    sfSprite_destroy(drumQueue[front].sprite);
-    front = (front + 1) % MAX_DRUMS;
+    sfSprite_destroy(drumQueue[*front].sprite);
+    *front = (*front + 1) % MAX_DRUMS;
     size--;
 }
 
-void spawnDrum(int type, float targetTime) {
-    if (isQueueFull()) {
+void spawnDrum(int* size, int type, int* rear, Drum* drumQueue, float targetTime, sfTexture* drumTexture ) {
+    if (isQueueFull(*size)) {
         printf("Queue is full, cannot spawn more drums!\n");
         return;
     }
@@ -192,40 +191,34 @@ void spawnDrum(int type, float targetTime) {
     drum.sprite = sfSprite_create();
 
     if (drum.type == 1) {
-        sfSprite_setTexture(drum.sprite, redDrumTexture, sfTrue);
+        sfSprite_setTexture(drum.sprite, drumTexture, sfTrue);
     }
     else {
-        sfSprite_setTexture(drum.sprite, blueDrumTexture, sfTrue);
+        sfSprite_setTexture(drum.sprite, drumTexture, sfTrue);
     }
 
     // 根據目標時間計算初始位置
     float initialX = SCREEN_WIDTH;
     sfSprite_setPosition(drum.sprite, (sfVector2f) { initialX, 200 });
 
-    enqueue(drum);
+    enqueue(drum, size, drumQueue, rear);
 }
 
-void updateDrums() {
-    // 先檢查是否需要刪除 front 元素
+void updateDrums(int* size, Drum* drumQueue, int* front, GameStats* stats, float* drumStep) {
 
-    /*if (size>0 && sfSprite_getPosition(drumQueue[front].sprite).x == 404-32) {
-        sfSleep(sfMilliseconds(1000) );
-        printf("the position be like %f\n", sfSprite_getPosition(drumQueue[front].sprite).x);
-    }*/
-
-    if (size > 0 && sfSprite_getPosition(drumQueue[front].sprite).x < HIT_POSITION_X - 85) {
-        sfSprite_destroy(drumQueue[front].sprite);
-        stats.miss_count++;
-        stats.current_combo = 0;
-        front = (front + 1) % MAX_DRUMS;
-        size--;
+    if (size > 0 && sfSprite_getPosition(drumQueue[*front].sprite).x < HIT_POSITION_X - 85) {
+        sfSprite_destroy(drumQueue[*front].sprite);
+        stats->miss_count++;
+        stats->current_combo = 0;
+        *front = (*front + 1) % MAX_DRUMS;
+        (*size)--;
     }
     // 更新剩餘元素的位置
-    int count = size;
-    int index = front;
+    int count = *size;
+    int index = *front;
     while (count > 0) {
         sfVector2f pos = sfSprite_getPosition(drumQueue[index].sprite);
-        pos.x -= drumStep;
+        pos.x -= *drumStep;
         sfSprite_setPosition(drumQueue[index].sprite, pos);
         index = (index + 1) % MAX_DRUMS;
         count--;
@@ -246,12 +239,12 @@ sfCircleShape* createJudgementCircle() {
 }
 
 // 處理打擊判定
-void processHit(int hitType) {
+void processHit(int hitType, int* size, int* front, Drum* drumQueue, GameStats* stats) {
     // 沒有音符時直接返回
     if (size == 0) return;
 
     // 獲取最前面的音符位置
-    sfVector2f drumPos = sfSprite_getPosition(drumQueue[front].sprite);
+    sfVector2f drumPos = sfSprite_getPosition(drumQueue[*front].sprite);
     float distance = drumPos.x - (HIT_POSITION_X - 46);
     printf("距離: %f\n", distance);
     // 只判定距離判定圓較近的音符
@@ -260,9 +253,9 @@ void processHit(int hitType) {
     }
 
     // 檢查音符類型是否匹配
-    if (drumQueue[front].type != hitType) {
-        stats.miss_count++;
-        stats.current_combo = 0;
+    if (drumQueue[*front].type != hitType) {
+        stats->miss_count++;
+        stats->current_combo = 0;
         return;
     }
 
@@ -270,27 +263,27 @@ void processHit(int hitType) {
     float abs_distance = (distance < 0) ? -distance : distance;
     if (abs_distance <= GREAT_THRESHOLD) {
         // Great判定
-        stats.great_count++;
-        stats.current_combo++;
-        stats.total_score += 300 + (stats.current_combo * 10);
-        if (stats.current_combo > stats.max_combo) {
-            stats.max_combo = stats.current_combo;
+        stats->great_count++;
+        stats->current_combo++;
+        stats->total_score += 300 + (stats->current_combo * 10);
+        if (stats->current_combo > stats->max_combo) {
+            stats->max_combo = stats->current_combo;
         }
-        dequeue();  // 移除命中的音符
+        dequeue(size, drumQueue, front);  // 移除命中的音符
     }
     else if (abs_distance <= GOOD_THRESHOLD) {
         // Good判定
-        stats.good_count++;
-        stats.current_combo++;
-        stats.total_score += 100 + (stats.current_combo * 5);
-        if (stats.current_combo > stats.max_combo) {
-            stats.max_combo = stats.current_combo;
+        stats->good_count++;
+        stats->current_combo++;
+        stats->total_score += 100 + (stats->current_combo * 5);
+        if (stats->current_combo > stats->max_combo) {
+            stats->max_combo = stats->current_combo;
         }
-        dequeue();  // 移除命中的音符
+        dequeue(size, drumQueue, front);  // 移除命中的音符
     }
 }
 
-void drawUI(sfRenderWindow* window, sfText* scoreText, sfCircleShape* judgementCircle) {
+void drawUI(sfRenderWindow* window, sfText* scoreText, sfCircleShape* judgementCircle, GameStats stats) {
     char scoreString[200];
     snprintf(scoreString, sizeof(scoreString),
         "Score: %d\nGreat: %d\nGood: %d\nMiss: %d\nCombo: %d\nMax Combo: %d",
@@ -300,4 +293,32 @@ void drawUI(sfRenderWindow* window, sfText* scoreText, sfCircleShape* judgementC
 
     sfRenderWindow_drawCircleShape(window, judgementCircle, NULL);
     sfRenderWindow_drawText(window, scoreText, NULL);
+}
+
+void countdownEvent(int* gameStarted, float* currentTime, sfText* countdownText, MusicInfo musicInfo, sfMusic* music, float* gameStartTime, sfClock* spawnClock) {
+    if (!gameStarted) {
+        int countdown = (int)(INITIAL_DELAY - *currentTime + 1);
+        if (countdown > 0) {
+            char countdownStr[2];
+            sprintf_s(countdownStr, sizeof(countdownStr), "%d", countdown);  // 使用sprintf_s
+            sfText_setString(countdownText, countdownStr);
+        }
+        else {
+            printf("遊戲開始！\n");
+            printf("currentTime: %f, offset: %f", *currentTime, musicInfo.offset);
+            if (!(sfMusic_getStatus(music) == sfPlaying) &&
+                *currentTime >= musicInfo.offset && musicInfo.offset >= 0) {
+                sfMusic_play(music);
+            }
+            sfClock_restart(spawnClock);
+            *gameStartTime = 0.0f;
+            *gameStarted = 1;  // 設定遊戲已開始
+        }
+    }
+    if (*gameStarted && musicInfo.offset < 0) {
+        if (!(sfMusic_getStatus(music) == sfPlaying) &&
+            *currentTime >= -musicInfo.offset) {
+            sfMusic_play(music);
+        };
+    }
 }
