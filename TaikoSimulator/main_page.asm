@@ -7,9 +7,9 @@ extern currentPage: DWORD
 
 .data
     ; 檔案路徑
-    musicPath db "C:\Users\User\source\repos\TaikoSimulator\TaikoSimulator\assets\main\v_title.ogg", 0
-    picPath db "C:\Users\User\source\repos\TaikoSimulator\TaikoSimulator\assets\main\taiko_main.jpg", 0
-    fontPath db "C:\Users\User\source\repos\TaikoSimulator\TaikoSimulator\assets\main\Taiko_No_Tatsujin_Official_Font.ttf", 0
+    musicPath db "assets\main\v_title.ogg", 0
+    picPath db "assets\main\taiko_main.jpg", 0
+    fontPath db "assets\main\Taiko_No_Tatsujin_Official_Font.ttf", 0
     
     ; 視窗和遊戲標題
     window_title db "Taiko Simulator", 0
@@ -37,7 +37,7 @@ extern currentPage: DWORD
     opacity dd 043700000r ; 240.0
     minOpacity dd 042480000r ; 50.0
     maxOpacity dd 043700000r ; 240.0
-    deltaOpacity dd 0bdcccccdr ; -0.1
+    deltaOpacity dd -2.5 ; -0.1
     textColor sfColor <>
     outlineColor sfColor <>
     
