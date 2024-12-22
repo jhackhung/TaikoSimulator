@@ -466,7 +466,7 @@ ParseNoteChart PROC filename:DWORD
 
 		jmp ParseLineLoop
 
-	EndParse
+	EndParse:
 
 		push filePtr
 		call fclose
