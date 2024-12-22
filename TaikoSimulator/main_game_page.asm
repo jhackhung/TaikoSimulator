@@ -104,6 +104,7 @@ INITIAL_DELAY = 3
 	real_2 real4 2.0
     real_30 real4 30.0
 	real_32 real4 32.0
+    real_200 real4 200.0
     real_225 real4 225.0
     real_450 real4 450.0
 	real_720 real4 720.0
@@ -211,22 +212,26 @@ spawnDrum PROC USES esi edi _type:DWORD, targetTime:REAL4
     cmp _type, 1
     jne SetBlueTexture
     push sfTrue
-    push OFFSET redDrumTexture
+    push dword ptr redDrumTexture
     push [esi]
     call sfSprite_setTexture
     add esp, 12
     jmp DoneTexture
 SetBlueTexture:
     push sfTrue
-    push OFFSET blueDrumTexture
+    push dword ptr blueDrumTexture
     push [esi]
     call sfSprite_setTexture
     add esp, 12
 DoneTexture:
 
     ; ³]¸mªì©l¦ì¸m
-    push 200
-    push SCREEN_WIDTH
+
+    sub esp, 8
+    movss xmm0, real_1280
+    movss dword ptr [esp], xmm0
+    movss xmm0, real_200
+    movss dword ptr [esp+4], xmm0
     push [esi]
     call sfSprite_setPosition
     add esp, 12
@@ -253,7 +258,6 @@ updateDrums PROC USES esi edi ebx
     push [esi]            ; drum.sprite
     call sfSprite_getPosition
     add esp, 4
-    cvtsi2ss xmm0, eax
     subss xmm0, real_365
     comiss xmm0, real_0
     jnl SkipFrontRemoval
@@ -283,9 +287,11 @@ UpdateLoop:
     push dword ptr [esi]
     call sfSprite_getPosition
     add esp, 4
-    cvtsi2ss xmm0, eax
+
+
     subss xmm0, drumStep
     
+    push edx
     sub esp, 4
     movss dword ptr [esp], xmm0
     push [esi]
@@ -438,7 +444,7 @@ processHit proc
     add esp, 4                           ; Clean stack
     
     ; Calculate distance
-    mov ecx, dword ptr [HIT_POSITION_X]
+    mov ecx, dword ptr [real_450]        ; HIT_POSITION_X
     sub ecx, 46                          ; HIT_POSITION_X - 46
     fld dword ptr [eax]                  ; Load x position
     fsub dword ptr [ecx]                 ; Calculate distance
