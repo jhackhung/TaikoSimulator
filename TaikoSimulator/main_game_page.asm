@@ -614,13 +614,14 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
     fldz                             ; st(0) = 0.0
     fld msInfo._offset               ; st(1) = 0.0, st(0) = musicInfo.offset
     fcomip st(0), st(1)              ; 比較 st(0) 與 0.0
-    jbe skip_music_play              ; 如果 musicInfo.offset < 0 跳過
+    ja skip_music_play              ; 如果 musicInfo.offset < 0 跳過
     fstp st(0)                       ; 清除浮點堆疊
 
     ; 播放音樂
     push music
     call sfMusic_play
 	add esp, 4
+
 skip_music_play:
     ; 重置時鐘
     push spawnClock
@@ -642,7 +643,10 @@ deter_offset:
     fldz                             ; st(0) = 0.0
     fld msInfo._offset               ; st(1) = 0.0, st(0) = musicInfo.offset
     fcomip st(0), st(1)              ; 比較 musicInfo.offset 和 0.0
-    jae @event_loop                  ;如果 offset >= 0，跳過
+    ja @event_loop                  ;如果 offset >= 0，跳過 play music
+
+    fcomip st(0), st(1)              ; 比較 musicInfo.offset 和 0.0
+    jbe @late_beatmap                  ;如果 offset >= 0，跳過 play music
     fstp st(0)                       ; 清除浮點堆疊
 
 	; 呼叫 sfMusic_getStatus 並檢查是否為 sfPlaying
@@ -664,6 +668,14 @@ deter_offset:
     push music
     call sfMusic_play
 	add esp, 4
+
+    @late_beatmap: ; 如果 musicInfo.offset <０　&&　currentTime >= -musicInfo.offset，開始播放譜面
+    fld msInfo._offset              ; st(0) = musicInfo.offset
+    fchs                             ; st(0) = -musicInfo.offset
+    fld currentTime                  ; st(1) = currentTime, st(0) = -musicInfo.offset
+    fcomip st(0), st(1)              ; 比較 currentTime 和 -musicInfo.offset
+    jae deter_offset                  ; 如果 currentTime >= -musicInfo.offset，跳過鼓面
+    fstp st(0)                       ; 清除浮點堆疊
 
 	@event_loop:
 		; 事件處理
