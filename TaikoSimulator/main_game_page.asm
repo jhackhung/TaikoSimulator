@@ -56,7 +56,7 @@ INITIAL_DELAY = 3
 	bgSprite dword ?
 
 	; judgement circle
-	judgmentCircle dword ?
+	judgementCircle dword ?
 	
 	; music
 	music dword ?
@@ -79,7 +79,7 @@ INITIAL_DELAY = 3
 
 	; color
 	blackColor sfColor <0, 0, 0, 255>
-	transparentColor sfColor <0, 0, 0, 150>
+	transparentColor sfColor <0, 0, 0, 50>
 
 	; file
 	readA byte "r", 0
@@ -102,13 +102,18 @@ INITIAL_DELAY = 3
 	decimal_mult  dq 0.1                  ; 小數位數乘數
     ten           dq 10.0                 ; 用於乘法運算
 	real_2 real4 2.0
+    real_30 real4 30.0
 	real_32 real4 32.0
+    real_225 real4 225.0
+    real_450 real4 450.0
 	real_720 real4 720.0
 	real_1280 real4 1280.0
 	real_1000000 real4 1000000.0
     real_good_threshold real4 30.0
     real_great_threshold real4 4.0
-
+    real_365 real4 365.0
+    real_0 real4 0.0
+    loop_index dword 0
 .code
 
 readNoteChart PROC
@@ -237,6 +242,7 @@ QueueFullSpawn:
 spawnDrum ENDP
 
 updateDrums PROC USES esi edi ebx
+    local i:DWORD
     ; 檢查並移除過時的音符
     mov eax, _size
     test eax, eax
@@ -247,10 +253,9 @@ updateDrums PROC USES esi edi ebx
     push [esi]            ; drum.sprite
     call sfSprite_getPosition
     add esp, 4
-    mov ebx, eax            ; 保存X座標
-    sub ebx, HIT_POSITION_X
-    sub ebx, 85
-    cmp ebx, 0
+    cvtsi2ss xmm0, eax
+    subss xmm0, real_365
+    comiss xmm0, real_0
     jnl SkipFrontRemoval
 
     ; 移除過時音符
@@ -266,19 +271,23 @@ SkipFrontWrap2:
 SkipFrontRemoval:
 
     ; 更新音符位置
-    mov ecx, _size
+    mov eax, _size
+    mov i, eax
     mov edi, front
 UpdateLoop:
-    test ecx, ecx
+    mov eax, i
+    cmp eax, 0
     jz EndUpdateLoop
 
     mov esi, drumQueue[edi*4]
-    push [esi]
+    push dword ptr [esi]
     call sfSprite_getPosition
     add esp, 4
-    mov ebx, eax
-    sub ebx, drumStep
-    push ebx
+    cvtsi2ss xmm0, eax
+    subss xmm0, drumStep
+    
+    sub esp, 4
+    movss dword ptr [esp], xmm0
     push [esi]
     call sfSprite_setPosition
     add esp, 8
@@ -288,7 +297,9 @@ UpdateLoop:
     jb NoWrap
     mov edi, 0
 NoWrap:
-    dec ecx
+    mov eax, i
+    dec eax
+    mov i, eax
     jmp UpdateLoop
 EndUpdateLoop:
 SkipUpdate:
@@ -300,42 +311,39 @@ createJudgementCircle PROC USES esi edi
     push 0
     call sfCircleShape_create
     add esp, 4
-    mov esi, eax
+    mov judgementCircle, eax
 
     ; 設置圓形半徑
-    push 30
-    push esi
+    push real_30
+    push dword ptr [judgementCircle]
     call sfCircleShape_setRadius
     add esp, 8
 
     ; 設置圓形位置
-    push 225               ; HIT_POSITION_X, 200+25
-    push HIT_POSITION_X
-    lea eax, [esp]
-    push eax
-    push esi
+    push real_225               ; HIT_POSITION_X, 200+25
+    push real_450
+    push dword ptr [judgementCircle]
     call sfCircleShape_setPosition
-    add esp, 16
+    add esp, 12
 
     ; 設置填充顏色
-    push blackColor
-    push esi
+    push transparentColor
+    push dword ptr [judgementCircle]
     call sfCircleShape_setFillColor
     add esp, 8
 
     ; 設置邊框厚度
-    push 2
-    push esi
+    push real_2
+    push dword ptr [judgementCircle]
     call sfCircleShape_setOutlineThickness
     add esp, 8
 
     ; 設置邊框顏色
-    push transparentColor
-    push esi
+    push blackColor
+    push dword ptr [judgementCircle]
     call sfCircleShape_setOutlineColor
     add esp, 8
 
-    mov eax, esi
     ret
 createJudgementCircle ENDP
 
@@ -546,7 +554,6 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
 
 	; create judgement circle
 	call createJudgementCircle
-	mov judgmentCircle, eax
 
 	; create music
 	push 0
@@ -771,17 +778,19 @@ spawn_loop:
         add esp, 12
 
         ; 繪製音符
-        mov ecx, _size
-        test ecx, ecx
+        mov eax, _size
+        test eax, eax
         jz @deter_music_stop
+        mov loop_index, eax
         mov edi, front
     draw_notes:
-        cmp ecx, 0
+        mov eax, loop_index
+        cmp eax, 0
         jz @deter_music_stop
 
         push 0
         mov eax, [drumQueue + edi*4]
-		push eax
+		push dword ptr [eax]
         mov ecx, DWORD PTR [window]
         push ecx
         call sfRenderWindow_drawSprite
@@ -793,7 +802,9 @@ spawn_loop:
 
     @next_note:
         inc edi
-        dec ecx
+        mov eax, loop_index
+        dec eax
+        mov loop_index, eax
         jmp draw_notes
         
 
@@ -812,10 +823,8 @@ spawn_loop:
     @display:
         ; 繪製判定圓
         push 0
-        mov eax, judgmentCircle
-        push eax
-        mov ecx, DWORD PTR [window]
-        push ecx
+        push dword ptr [judgementCircle]
+        push DWORD PTR [window]
         call sfRenderWindow_drawCircleShape
         add esp, 12
 
