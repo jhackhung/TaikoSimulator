@@ -18,12 +18,15 @@ MAX_LINE_LENGTH = 1000
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 MAX_DRUMS = 100
-HIT_POSITION_X = 450
+HIT_POSITION_X = 450 
 GREAT_THRESHOLD = 4
 GOOD_THRESHOLD = 30
 INITIAL_DELAY = 3
 
 .data
+    ALIGN 4
+    abs_mask DD 7fffffffh, 0, 0, 0
+
 	consoleHandle dd ?
 	event sfEvent <>
 
@@ -34,7 +37,7 @@ INITIAL_DELAY = 3
     red_note_sound_path db "assets/game/redmote.wav", 0
     blue_note_sound_path db "assets/main/bluemote.wav", 0
 
-	stats GameStats <>
+	stats GameStats <0, 0, 0, 0, 0, 0>
 	msInfo MusicInfo <130.000000, -1.962000, 115.384613>
 
 	; queue for drums
@@ -260,9 +263,14 @@ updateDrums PROC USES esi edi ebx
     push [esi]            ; drum.sprite
     call sfSprite_getPosition
     add esp, 4
-    subss xmm0, real_365
-    comiss xmm0, real_0
-    jnl SkipFrontRemoval
+
+    ; 檢查音符是否完全超出判定圓圈
+    ; 判定圓圈左邊緣 = 450 - 30 = 420
+    addss xmm0, real_32   ; 加上音符寬度(約32像素)
+    movss xmm1, real_450  ; 載入判定圈x座標
+    subss xmm1, real_30   ; 減去半徑，獲得左邊緣
+    comiss xmm0, xmm1     ; 比較 (note.x + width) < (circle.x - radius)
+    jae SkipFrontRemoval
 
     ; 移除過時音符
     push [esi]
@@ -418,121 +426,90 @@ createJudgementCircle ENDP
 	ret
 @countDown_text ENDP
 
-processHit proc
-    push ebp
-    mov ebp, esp
-    sub esp, 32                          ; Local stack space
+processHit proc uses ebx esi edi hitType:DWORD
+    local delta:DWORD
     
-    ; Save registers
-    push ebx
-    push esi
-    push edi
+    ; 檢查佇列是否為空
+    call isQueueEmpty
+    test al, al
+    jnz @done_processing
     
-    ; Get parameters (cdecl)
-    mov ebx, [ebp + 8]                   ; hitType in ebx
+    ; 獲取最前面的音符
+    mov edi, front
+    mov esi, drumQueue[edi*4]
     
-    ; Check if size == 0
-    mov eax, dword ptr [_size]
-    test eax, eax
-    jz done_processing
+    ; 獲取音符位置
+    push dword ptr [esi]
+    call sfSprite_getPosition
+    add esp, 4
     
-    ; Get drum position
-    mov eax, dword ptr [front]           ; Load front index
-    mov ecx, 24                          ; sizeof(DrumNote)
-    mul ecx                              ; eax = front * 24
-    add eax, dword ptr [drumQueue]       ; Base address of current drum
-    push eax                             ; Push sprite pointer
-    call sfSprite_getPosition            ; Call function (cdecl)
-    add esp, 4                           ; Clean stack
+    ; 計算與判定線的距離
+    subss xmm0, real_450
     
-    ; Calculate distance
-    mov ecx, dword ptr [real_450]        ; HIT_POSITION_X
-    sub ecx, 46                          ; HIT_POSITION_X - 46
-    fld dword ptr [eax]                  ; Load x position
-    fsub dword ptr [ecx]                 ; Calculate distance
-    fstp dword ptr [ebp-4]              ; Store distance
+    ; 取絕對值
+    andps xmm0, [abs_mask]
     
-    ; Check distance thresholds
-    fld dword ptr [ebp-4]               ; Load distance
-    fabs                                ; Get absolute value
-    fld dword ptr [real_good_threshold]      ; Load GOOD_THRESHOLD
-    fcompp                              ; Compare and pop both
-    fstsw ax                           ; Store FPU status
-    sahf                               ; Transfer to CPU flags
-    ja done_processing                 ; If abs(distance) > GOOD_THRESHOLD
+    ; 檢查音符類型是否匹配
+    mov edx, dword ptr [esi+4]
+    cmp edx, [hitType]
+    jne @miss_hit
     
-    ; Check note type match
-    mov eax, dword ptr [front]
-    mov ecx, 24
-    mul ecx
-    add eax, dword ptr [drumQueue]
-    mov edx, dword ptr [eax+4]           ; Load drum type
-    cmp edx, ebx                       ; Compare with hitType
-    jne miss_hit
+    ; 檢查是否在great範圍內
+    comiss xmm0, real_great_threshold
+    jbe @great_hit
     
-    ; Check for GREAT hit
-    fld dword ptr [ebp-4]              ; Reload distance
-    fabs
-    fld dword ptr [real_great_threshold]
-    fcompp
-    fstsw ax
-    sahf
-    ja good_hit
+    ; 檢查是否在good範圍內
+    comiss xmm0, real_good_threshold
+    ja @miss_hit
     
-great_hit:
-    mov esi, dword ptr [stats]         ; Get stats pointer
-    inc dword ptr [esi + GameStats.great_count]      ; Increment great_count
-    inc dword ptr [esi + GameStats.current_combo]    ; Increment current_combo
+@good_hit:
+    ; 直接操作記憶體中的計數器
+    mov eax, offset stats
+    inc dword ptr [eax]              ; great_count
+    inc dword ptr [eax+12]           ; current_combo
     
-    ; Calculate score
-    mov edx, dword ptr [esi + GameStats.current_combo]  ; Get current_combo
-    imul edx, 10                       ; combo * 10
-    add edx, 300                       ; Add base score
-    add dword ptr [esi + GameStats.total_score], edx  ; Add to total_score
+    ; 計算分數 (combo * 5 + 100)
+    mov ecx, dword ptr [eax+12]      ; 取得current_combo
+    imul ecx, 5
+    add ecx, 100
+    add dword ptr [eax+20], ecx      ; 加到total_score
     
-    ; Update max combo
-    mov edx, dword ptr [esi + GameStats.current_combo]  ; Get current_combo
-    cmp edx, dword ptr [esi + GameStats.max_combo]      ; Compare with max_combo
-    jle do_dequeue
-    mov dword ptr [esi + GameStats.max_combo], edx      ; Update max_combo
-    jmp do_dequeue
+    ; 更新max_combo
+    mov ecx, dword ptr [eax+12]      ; current_combo
+    cmp ecx, dword ptr [eax+16]      ; 比較max_combo
+    jle @remove_note
+    mov dword ptr [eax+16], ecx      ; 更新max_combo
+    jmp @remove_note
     
-good_hit:
-    mov esi, dword ptr [stats]         ; Get stats pointer
-    inc dword ptr [esi + GameStats.good_count]       ; Increment good_count
-    inc dword ptr [esi + GameStats.current_combo]    ; Increment current_combo
+@great_hit:
+    mov eax, offset stats
+    inc dword ptr [eax]              ; great_count
+    inc dword ptr [eax+12]           ; current_combo
     
-    ; Calculate score
-    mov edx, dword ptr [esi + GameStats.current_combo]  ; Get current_combo
-    imul edx, 5                        ; combo * 5
-    add edx, 100                       ; Add base score
-    add dword ptr [esi + GameStats.total_score], edx  ; Add to total_score
+    ; 計算分數 (combo * 10 + 300)
+    mov ecx, dword ptr [eax+12]      ; 取得current_combo
+    imul ecx, 10
+    add ecx, 300
+    add dword ptr [eax+20], ecx      ; 加到total_score
     
-    ; Update max combo
-    mov edx, dword ptr [esi + GameStats.current_combo]  ; Get current_combo
-    cmp edx, dword ptr [esi + GameStats.max_combo]      ; Compare with max_combo
-    jle do_dequeue
-    mov dword ptr [esi + GameStats.max_combo], edx      ; Update max_combo
-    jmp do_dequeue
+    ; 更新max_combo
+    mov ecx, dword ptr [eax+12]      ; current_combo
+    cmp ecx, dword ptr [eax+16]      ; 比較max_combo
+    jle @remove_note
+    mov dword ptr [eax+16], ecx      ; 更新max_combo
+    jmp @remove_note
     
-miss_hit:
-    mov esi, dword ptr [stats]         ; Get stats pointer
-    inc dword ptr [esi + GameStats.miss_count]       ; Increment miss_count
-    mov dword ptr [esi + GameStats.current_combo], 0  ; Reset current_combo
-    jmp done_processing
+@miss_hit:
+    mov eax, offset stats
+    inc dword ptr [eax+8]            ; miss_count
+    mov dword ptr [eax+12], 0        ; current_combo = 0
+    jmp @done_processing
     
-do_dequeue:
-    call dequeue                       ; Remove the hit note (cdecl)
+@remove_note:
+    call dequeue
     
-done_processing:
-    ; Restore registers
-    pop edi
-    pop esi
-    pop ebx
-    
-    mov esp, ebp
-    pop ebp
-    ret
+@done_processing:
+    ret 4
 
 processHit endp
 
@@ -562,56 +539,58 @@ bluenote_sound PROC
 bluenote_sound ENDP
 
 main_game_page PROC window:dword,musicPath:dword,noteChart:dword
-	
-	mov dword ptr [noteChart], offset chart
-	push dword ptr [noteChart]
-	call readNoteChart
-	add esp, 4
+    mov eax, offset stats
+    mov dword ptr [eax], 0      ; great_count
+    mov dword ptr [eax+4], 0    ; good_count
+    mov dword ptr [eax+8], 0    ; miss_count
+    mov dword ptr [eax+12], 0   ; current_combo
+    mov dword ptr [eax+16], 0   ; max_combo
+    mov dword ptr [eax+20], 0   ; total_score
 
-	; load background
-	call @ld_background
+    ; load background
+    call @ld_background
 
-	; load red note texture
-	push 0
-	push offset redNotePath
-	call sfTexture_createFromFile
-	add esp, 8
-	mov redDrumTexture, eax
+    ; load red note texture
+    push 0
+    push offset redNotePath
+    call sfTexture_createFromFile
+    add esp, 8
+    mov redDrumTexture, eax
 
-	; load blue note texture
-	push 0
-	push offset blueNotePath
-	call sfTexture_createFromFile
-	add esp, 8
-	mov blueDrumTexture, eax
+    ; load blue note texture
+    push 0
+    push offset blueNotePath
+    call sfTexture_createFromFile
+    add esp, 8
+    mov blueDrumTexture, eax
 
-	; create judgement circle
-	call createJudgementCircle
+    ; create judgement circle
+    call createJudgementCircle
 
-	; create music
-	push 0
-	push dword ptr [musicPath]
-	call sfMusic_createFromFile
-	add esp, 8
-	mov music, eax
+    ; create music
+    push 0
+    push dword ptr [musicPath]
+    call sfMusic_createFromFile
+    add esp, 8
+    mov music, eax
 
-	push 0
-	push music
-	call sfMusic_setLoop
-	add esp, 8
+    push 0
+    push music
+    call sfMusic_setLoop
+    add esp, 8
 
-	call sfClock_create
-	mov spawnClock, eax
+    call sfClock_create
+    mov spawnClock, eax
 
 @main_loop:
-	mov eax, DWORD PTR [window]
+    mov eax, DWORD PTR [window]
     push eax
     call sfRenderWindow_isOpen
     add esp, 4
     test eax, eax
     je exit_program
 
-    push spawnClock  ; 呼叫sfClock_getElapsedTime並獲取microseconds
+    push spawnClock
     call sfClock_getElapsedTime
     cvtsi2ss xmm1, eax
 
@@ -621,91 +600,74 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
     ; 除以1000000.0以轉換為秒
     movss dword ptr [currentTime], xmm1
 
-	mov eax, gameStarted
-	cmp eax, 0
-	jne deter_offset
+    mov eax, gameStarted
+    cmp eax, 0
+    jne deter_offset
 
-	; check game start
-	push music 
-	call sfMusic_getStatus
-	add esp, 4
-	cmp eax, sfPlaying
-	je skip_music_play
+    ; check game start
+    push music 
+    call sfMusic_getStatus
+    add esp, 4
+    cmp eax, sfPlaying
+    je skip_music_play
 
-	; 比較 currentTime >= msInfo_offset
-    movss xmm0, [msInfo._offset]     ; 加載 musicInfo.offset
-    ucomiss xmm1, xmm0               ; 比較 currentTime 和 musicInfo.offset
-    jb skip_music_play               ; 如果 currentTime < musicInfo.offset 跳過
+    movss xmm0, [msInfo._offset]
+    ucomiss xmm1, xmm0
+    jb skip_music_play
 
-    ; 比較 msInfo_offset > 0
-    fldz                             ; st(0) = 0.0
-    fld msInfo._offset               ; st(1) = 0.0, st(0) = musicInfo.offset
-    fcomip st(0), st(1)              ; 比較 st(0) 與 0.0
-    ja skip_music_play              ; 如果 musicInfo.offset < 0 跳過
-    fstp st(0)                       ; 清除浮點堆疊
+    fldz
+    fld msInfo._offset
+    fcomip st(0), st(1)
+    jbe skip_music_play
+    fstp st(0)
 
     ; 播放音樂
     push music
     call sfMusic_play
-	add esp, 4
+    add esp, 4
 
 skip_music_play:
     ; 重置時鐘
     push spawnClock
     call sfClock_restart
 
-    ; 設定 gameStartTime = 0.0f
-    fldz                             ; 加載 0.0
+    fldz
     fstp gameStartTime
 
     ; 設定 gameStarted = 1
     mov gameStarted, 1
 
 deter_offset:
-	mov eax, gameStarted
-	cmp eax, 1
-	jne @event_loop
+    mov eax, gameStarted
+    cmp eax, 1
+    jne @event_loop
 
-	; 比較 musicInfo.offset < 0
-    fldz                             ; st(0) = 0.0
-    fld msInfo._offset               ; st(1) = 0.0, st(0) = musicInfo.offset
-    fcomip st(0), st(1)              ; 比較 musicInfo.offset 和 0.0
-    ja @event_loop                  ;如果 offset >= 0，跳過 play music
-
-    fcomip st(0), st(1)              ; 比較 musicInfo.offset 和 0.0
-    jbe @late_beatmap                  ;如果 offset >= 0，跳過 play music
-    fstp st(0)                       ; 清除浮點堆疊
+    fldz
+    fld msInfo._offset
+    fcomip st(0), st(1)
+    jae @event_loop
+    fstp st(0)
 
 	; 呼叫 sfMusic_getStatus 並檢查是否為 sfPlaying
     push music
     call sfMusic_getStatus
-	add esp, 4
-    cmp eax, sfPlaying               ; 比較返回值與 sfPlaying
-    je @event_loop                  ; 如果音樂正在播放，跳過
+    add esp, 4
+    cmp eax, sfPlaying
+    je @event_loop
 
-    ; 計算 currentTime >= -musicInfo.offset
-    fld msInfo._offset              ; st(0) = musicInfo.offset
-    fchs                             ; st(0) = -musicInfo.offset
-    fld currentTime                  ; st(1) = currentTime, st(0) = -musicInfo.offset
-    fcomip st(0), st(1)              ; 比較 currentTime 和 -musicInfo.offset
-    jb @event_loop                  ; 如果 currentTime < -musicInfo.offset，跳過
-    fstp st(0)                       ; 清除浮點堆疊
+    fld msInfo._offset
+    fchs
+    fld currentTime
+    fcomip st(0), st(1)
+    jb @event_loop
+    fstp st(0)
 
     ; 播放音樂
     push music
     call sfMusic_play
-	add esp, 4
+    add esp, 4
 
-    @late_beatmap: ; 如果 musicInfo.offset <０　&&　currentTime >= -musicInfo.offset，開始播放譜面
-    fld msInfo._offset              ; st(0) = musicInfo.offset
-    fchs                             ; st(0) = -musicInfo.offset
-    fld currentTime                  ; st(1) = currentTime, st(0) = -musicInfo.offset
-    fcomip st(0), st(1)              ; 比較 currentTime 和 -musicInfo.offset
-    jae deter_offset                  ; 如果 currentTime >= -musicInfo.offset，跳過鼓面
-    fstp st(0)                       ; 清除浮點堆疊
-
-	@event_loop:
-		; 事件處理
+    @event_loop:
         lea esi, event
         push esi
         mov eax, DWORD PTR [window]
@@ -714,218 +676,226 @@ deter_offset:
         add esp, 8
         test eax, eax
         je @controll_drum
-    
+
         ; 檢查關閉事件
         cmp dword ptr [esi].sfEvent._type, sfEvtClosed
         je @end
 
-		cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
-        je check_gameStarted
-
-check_gameStarted:
-        cmp gameStarted, 1
+        cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
         je @check_key_press
+
+    ; check_gameStarted:
+        ; cmp gameStarted, 1
+        ; je @check_key_press
 
         jmp @event_loop
 
-		@check_key_press:
-			cmp dword ptr [esi+4], sfKeyF
-            je @red_pressed
-
+        ; 修改按鍵處理部分
+        @check_key_press:
+   
+            ; 檢查是否是F鍵或J鍵
+            cmp dword ptr [esi+4], sfKeyF
+            je @handle_red
             cmp dword ptr [esi+4], sfKeyJ
-            je @red_pressed
-
+            je @handle_red
+    
+            ; 檢查是否是D鍵或K鍵
             cmp dword ptr [esi+4], sfKeyD
-            je @blue_pressed
-
+            je @handle_blue
             cmp dword ptr [esi+4], sfKeyK
-            je @blue_pressed     
-            
+            je @handle_blue
+    
             jmp @event_loop
-	@red_pressed:
-        ;call rednote_sound
-        ;push eax
-        ;add esp, 4
-		push 1
-		call processHit
-		add esp, 8
-		jmp @controll_drum
 
-	@blue_pressed:
-        call bluenote_sound
-        push eax
-        add esp, 4
-		push 2
-		call processHit
-		add esp, 8
-		jmp @controll_drum
+            @handle_red:
+                push 1                   ; 紅色音符類型
+                call processHit
+                jmp @controll_drum
 
-	@controll_drum:
-		mov eax, gameStarted
-		cmp eax, 0
-		je @render_window
+            @handle_blue:
+                push 2                   ; 藍色音符類型
+                call processHit
+                jmp @controll_drum
 
-        push spawnClock  ; 呼叫sfClock_getElapsedTime並獲取microseconds
-        call sfClock_getElapsedTime
-        cvtsi2ss xmm1, eax
+            @controll_drum:
+                mov eax, gameStarted
+                cmp eax, 0
+                je @render_window
 
-        movss xmm0, [real_1000000]
-        divss xmm1, xmm0
+                push spawnClock
+                call sfClock_getElapsedTime
+                cvtsi2ss xmm1, eax
+
+                movss xmm0, [real_1000000]
+                divss xmm1, xmm0
 
         ; 除以1000000.0以轉換為秒
-        movss dword ptr [currentTime], xmm1
+                movss dword ptr [currentTime], xmm1
 
 spawn_loop:
         ;比較currentNoteIndex < totalNotes
-        mov eax, currentNoteIndex
-        mov ebx, totalNotes
-        cmp eax, ebx
-        jae skip_spawn
+    mov eax, currentNoteIndex
+    mov ebx, totalNotes
+    cmp eax, ebx
+    jae check_last_note    ; 如果所有音符都已生成，檢查最後一個音符
 
-        ; 比較 currentTime >= noteTimings[currentNoteIndex]
-        movss xmm0, [currentTime]              ; 加載 currentTime
-        mov ebx, currentNoteIndex               ; ebx = currentNoteIndex
-        shl ebx, 2                              ; 計算索引的位移 (4字節對齊)
-        movss xmm1, noteTimings[ebx]            ; 加載 noteTimings[currentNoteIndex]
-        ucomiss xmm0, xmm1                      ; 比較 currentTime 與 noteTimings
-        jb loop_end                             ; 如果 currentTime < noteTimings, 跳過迴圈
+    movss xmm0, [currentTime]
+    mov ebx, currentNoteIndex
+    shl ebx, 2
+    movss xmm1, noteTimings[ebx]
+    ucomiss xmm0, xmm1
+    jb loop_end
 
-        ; 檢查 notes[currentNoteIndex] != 0
-        mov eax, currentNoteIndex               ; eax = currentNoteIndex
-        mov ebx, notes[eax*4]                   ; ebx = notes[currentNoteIndex]
-        cmp ebx, 0                              ; 比較 notes[currentNoteIndex] == 0
-        je skip_spawn                           ; 如果等於0，跳過 spawnDrum
+    mov eax, currentNoteIndex
+    mov ebx, notes[eax*4]
+    cmp ebx, 0
+    je skip_spawn
 
-        ; 呼叫 spawnDrum(notes[currentNoteIndex], noteTimings[currentNoteIndex])
+    sub esp, 4
+    movss dword ptr [esp], xmm1
+    push ebx
+    call spawnDrum
+    add esp, 8
 
-        sub esp, 4
-        movss dword ptr [esp], xmm1               ; 將noteTimings[currentNoteIndex]壓入堆疊
-        push ebx                                ; 將notes[currentNoteIndex]壓入堆疊
-        call spawnDrum
-        add esp, 8                              ; 清理堆疊
-
-    skip_spawn:
+skip_spawn:
         ; 更新 currentNoteIndex++
-        inc currentNoteIndex
-        jmp spawn_loop                          ; 返回迴圈起點
+    inc currentNoteIndex
+    jmp spawn_loop
 
-    loop_end:
+check_last_note:
+    ; 檢查是否有音符在隊列中
+    mov eax, _size
+    test eax, eax
+    jz @end_game         ; 如果沒有音符且都已生成，結束遊戲
+
+    ; 檢查最後一個音符的位置
+    mov edi, front
+    mov ecx, _size
+    dec ecx              ; 獲取最後一個音符的索引
+    add edi, ecx
+    cmp edi, MAX_DRUMS
+    jb no_wrap
+    sub edi, MAX_DRUMS
+no_wrap:
+    mov esi, drumQueue[edi*4]
+    push [esi]
+    call sfSprite_getPosition
+    add esp, 4
+    
+    ; 檢查音符是否已離開畫面
+    comiss xmm0, real_0   ; 比較 x 位置是否小於 0
+    jb @end_game         ; 如果最後一個音符已離開畫面，結束遊戲
+
+loop_end:
         ; 呼叫 updateDrums 函式
-        call updateDrums
+    call updateDrums
 
-	@render_window:
+@render_window:
         ; 清除視窗
-        push blackColor
-        push window
-        call sfRenderWindow_clear
-        add esp, 8
+    push blackColor
+    push window
+    call sfRenderWindow_clear
+    add esp, 8
 
         ; 繪製背景
-        push 0
-        mov eax, DWORD PTR [bgSprite]
-        push eax
-        mov ecx, DWORD PTR [window]
-        push ecx
-        call sfRenderWindow_drawSprite
-        add esp, 12
+    push 0
+    mov eax, DWORD PTR [bgSprite]
+    push eax
+    mov ecx, DWORD PTR [window]
+    push ecx
+    call sfRenderWindow_drawSprite
+    add esp, 12
 
         ; 繪製音符
-        mov eax, _size
-        test eax, eax
-        jz @deter_music_stop
-        mov loop_index, eax
-        mov edi, front
-    draw_notes:
-        mov eax, loop_index
-        cmp eax, 0
-        jz @deter_music_stop
+    mov eax, _size
+    test eax, eax
+    jz @display
+    mov loop_index, eax
+    mov edi, front
 
-        push 0
-        mov eax, [drumQueue + edi*4]
-		push dword ptr [eax]
-        mov ecx, DWORD PTR [window]
-        push ecx
-        call sfRenderWindow_drawSprite
-        add esp, 8
+draw_notes:
+    mov eax, loop_index
+    cmp eax, 0
+    jz @display
 
-        cmp edi, MAX_DRUMS
-        jne @next_note
-        mov edi, 0
+    push 0
+    mov eax, [drumQueue + edi*4]
+    push dword ptr [eax]
+    mov ecx, DWORD PTR [window]
+    push ecx
+    call sfRenderWindow_drawSprite
+    add esp, 12
 
-    @next_note:
-        inc edi
-        mov eax, loop_index
-        dec eax
-        mov loop_index, eax
-        jmp draw_notes
-        
+    inc edi
+    cmp edi, MAX_DRUMS
+    jne @next_note
+    mov edi, 0
 
-    @deter_music_stop:
-        push music
-        call sfMusic_getStatus
-        add esp, 4
-        cmp eax, sfStopped
-        jne @display
-        mov eax, currentNoteIndex
-        cmp eax, totalNotes
-        jne @display
+@next_note:
+    mov eax, loop_index
+    dec eax
+    mov loop_index, eax
+    jmp draw_notes
 
-        jmp @end_game
-
-    @display:
+@display:
         ; 繪製判定圓
-        push 0
-        push dword ptr [judgementCircle]
-        push DWORD PTR [window]
-        call sfRenderWindow_drawCircleShape
-        add esp, 12
+    push 0
+    push dword ptr [judgementCircle]
+    push DWORD PTR [window]
+    call sfRenderWindow_drawCircleShape
+    add esp, 12
 
-        push window
-        call sfRenderWindow_display
-        add esp, 4
+    push window
+    call sfRenderWindow_display
+    add esp, 4
 
-        jmp @main_loop
+    jmp @main_loop
 
 @end:
 
     ; 釋放資源
-	push music
-	call sfMusic_destroy
-	add esp, 4
+    push music
+    call sfMusic_destroy
+    add esp, 4
 
-	push 0
-	call sfTexture_destroy
-	add esp, 4
+    push bgTexture
+    call sfTexture_destroy
+    add esp, 4
 
-	push 0
-	call sfSprite_destroy
-	add esp, 4
+    push bgSprite
+    call sfSprite_destroy
+    add esp, 4
 
-	push 0
-	call sfCircleShape_destroy
-	add esp, 4
+    push judgementCircle
+    call sfCircleShape_destroy
+    add esp, 4
 
-	push 0
-	call sfFont_destroy
-	add esp, 4
+    push font
+    call sfFont_destroy
+    add esp, 4
 
-	push 0
-	call sfText_destroy
-	add esp, 4
+    push countDownText
+    call sfText_destroy
+    add esp, 4
 
 @end_game:
-    push stats.max_combo
-    push stats.total_score
-    push stats.miss_count
-    push stats.good_count
-    push stats.great_count
+    push music
+    call sfMusic_stop    ; 停止音樂
+    add esp, 4
+
+    push dword ptr [stats+16]    ; max_combo
+    push dword ptr [stats+20]    ; total_score
+    push dword ptr [stats+8]     ; miss_count
+    push dword ptr [stats+4]     ; good_count
+    push dword ptr [stats]       ; great_count
     push window
     call end_game_page
     add esp, 24
 
 exit_program:
 
-	ret
+    ret
+
 main_game_page ENDP
 
 END main_game_page

@@ -9,12 +9,12 @@ Drum struct
 Drum ends
 
 GameStats struct
-	great_count dword ?
-	good_count dword ?
-	miss_count dword ?
-	current_combo dword ?
-	max_combo dword ?
-	total_score dword ?
+	great_count DWORD ? 
+	good_count DWORD ? 
+	miss_count DWORD ? 
+	current_combo DWORD ? 
+	max_combo DWORD ? 
+	total_score DWORD ? 
 GameStats ends
 
 MusicInfo struct
