@@ -951,13 +951,13 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
     test eax, eax
     je exit_program
 
-	
+	fld real_1000000
     push spawnClock  ; 呼叫sfClock_getElapsedTime並獲取microseconds
     call sfClock_getElapsedTime
     fstp st(0)                    ; 將結果放入浮點堆疊 (microseconds)
 
     ; 除以1000000.0以轉換為秒
-    fld real_1000000
+
     fdiv                        ; st(0) = st(0) / divisor
     fst currentTIme             ; 儲存結果到currentTime
 
@@ -973,17 +973,17 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
 	je skip_music_play
 
 	; 比較 currentTime >= msInfo_offset
-    fld currentTime                  ; st(0) = currentTime
-    fld msInfo._offset              ; st(1) = musicInfo.offset, st(0) = currentTime
+    fld msInfo._offset               ; st(0) = musicInfo.offset
+    fld currentTime                  ; st(1) = musicInfo.offset, st(0) = currentTime
     fcomip st(0), st(1)              ; 比較 st(0) 與 st(1)
     jb skip_music_play               ; 如果 currentTime < musicInfo.offset 跳過
     fstp st(0)                       ; 清除浮點堆疊
 
-    ; 比較 msInfo_offset >= 0
-    fld msInfo._offset            ; st(0) = musicInfo.offset
-    fldz                             ; st(1) = 0.0, st(0) = musicInfo.offset
+    ; 比較 msInfo_offset > 0
+    fldz                             ; st(0) = 0.0
+    fld msInfo._offset               ; st(1) = 0.0, st(0) = musicInfo.offset
     fcomip st(0), st(1)              ; 比較 st(0) 與 0.0
-    jb skip_music_play               ; 如果 musicInfo.offset < 0 跳過
+    jbe skip_music_play              ; 如果 musicInfo.offset < 0 跳過
     fstp st(0)                       ; 清除浮點堆疊
 
     ; 播放音樂
@@ -1008,10 +1008,10 @@ deter_offset:
 	jne @event_loop
 
 	; 比較 musicInfo.offset < 0
-    fld msInfo._offset              ; st(0) = musicInfo.offset
-    fldz                             ; st(1) = 0.0, st(0) = musicInfo.offset
+    fldz                             ; st(0) = 0.0
+    fld msInfo._offset               ; st(1) = 0.0, st(0) = musicInfo.offset
     fcomip st(0), st(1)              ; 比較 musicInfo.offset 和 0.0
-    jae @event_loop                 ; 如果 offset >= 0，跳過
+    jae @event_loop                  ;如果 offset >= 0，跳過
     fstp st(0)                       ; 清除浮點堆疊
 
 	; 呼叫 sfMusic_getStatus 並檢查是否為 sfPlaying
@@ -1050,6 +1050,10 @@ deter_offset:
         je @end
 
 		cmp dword ptr [esi].sfEvent._type, sfEvtKeyPressed
+        je check_gameStarted
+
+check_gameStarted:
+        cmp gameStarted, 1
         je @check_key_press
 
         jmp @event_loop
@@ -1085,15 +1089,22 @@ deter_offset:
 		je @render_window
 
 		; 呼叫sfClock_getElapsedTime並獲取microseconds
+        fld real_1000000
 		push spawnClock
 		call sfClock_getElapsedTime
 		add esp, 4
 		fstp st(0)                    ; 將結果放入浮點堆疊 (microseconds)
 
 		; 除以1000000.0以轉換為秒
-		fld real_1000000
 		fdiv                        ; st(0) = st(0) / divisor
 		fst currentTime             ; 儲存結果到currentTime
+
+spawn_loop:
+        ;比較currentNoteIndex < totalNotes
+        mov eax, currentNoteIndex
+        mov ebx, totalNotes
+        cmp eax, ebx
+        jae skip_spawn
 
         ; 比較 currentTime >= noteTimings[currentNoteIndex]
         fld currentTime                         ; st(0) = currentTime
@@ -1119,7 +1130,7 @@ deter_offset:
     skip_spawn:
         ; 更新 currentNoteIndex++
         inc currentNoteIndex
-        jmp @controll_drum                          ; 返回迴圈起點
+        jmp spawn_loop                          ; 返回迴圈起點
 
     loop_end:
         ; 呼叫 updateDrums 函式
@@ -1153,6 +1164,8 @@ deter_offset:
         push 0
         mov eax, [drumQueue + edi*4]
 		push eax
+        mov ecx, DWORD PTR [window]
+        push ecx
         call sfRenderWindow_drawSprite
         add esp, 8
 
@@ -1177,6 +1190,15 @@ deter_offset:
         jne @display
 
         jmp @end_game
+
+        ; 繪製判定圓
+        push 0
+        mov eax, judgmentCircle
+        push eax
+        mov ecx, DWORD PTR [window]
+        push ecx
+        call sfRenderWindow_drawCircleShape
+        add esp, 12
 
     @display:
         push window
