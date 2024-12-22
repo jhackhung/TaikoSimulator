@@ -33,7 +33,7 @@ INITIAL_DELAY = 3
 	blueNotePath db "assets/game/blue_note.png", 0
 
 	stats GameStats <>
-	msInfo MusicInfo <>
+	msInfo MusicInfo <130.000000, -1.962000, 115.384613>
 
 	; queue for drums
 	drumQueue dword MAX_DRUMS dup(?) ; 存放Drum結構指針
@@ -71,11 +71,11 @@ INITIAL_DELAY = 3
 	gameStarted dword 0
 
 	; note chart
-	notes dword MAX_NOTES dup(?)
-	totalNotes dword 0
+	notes dword 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1
+	totalNotes dword 23
 	noteSpawnInterval real4 0.0
-	noteTimings real4 MAX_NOTES dup(?)
-	drumStep real4 0.25
+	noteTimings real4 0.000000, 0.923077, 1.846154, 2.769229, 3.653842, 7.384611, 8.307688, 9.230764, 10.153841, 11.076918, 12.884617, 14.769233, 15.692309, 16.615387, 17.538464, 18.461540, 19.384617, 20.307693, 22.153847, 23.076923, 24.000000, 24.923077, 25.846153
+	drumStep real4 7.493056
 
 	; color
 	blackColor sfColor <0, 0, 0, 255>
@@ -110,391 +110,11 @@ INITIAL_DELAY = 3
     real_great_threshold real4 4.0
 
 .code
-parseFormatFloat proc inputStr:DWORD, formatPrefix:DWORD, floatResult:PTR DWORD
-	LOCAL isDecimal:BYTE
-	LOCAL isNegative:BYTE
 
-    ; 初始化參數
-    mov esi, inputStr                   ; 獲取 inputStr
-    mov edi, formatPrefix                     ; 獲取 formatPrefix
+readNoteChart PROC
 
 
-; 比較 inputStr 與 formatPrefix
-compare_loop:
-    mov al, [esi]                          ; 取 inputStr 當前字元
-    mov bl, [edi]                          ; 取 formatPrefix 當前字元
-    cmp al, 0                              ; 檢查 inputStr 是否結束
-    je parse_error                         ; 如果結束但還沒遇到 %，報錯
-    cmp bl, 0                              ; 檢查 formatPrefix 是否結束
-    je parse_error                         ; 如果格式結束但還沒遇到 %，報錯
-    cmp al, bl                             ; 比較兩個字元
-    je matched                             ; 如果相等，繼續下一個字元
-    cmp bl, '%'                            ; 檢查是否遇到 %
-    je check_sign                        ; 遇到 % 開始解析數字
-    jmp parse_error                        ; 如果不匹配，報錯
-
-matched:
-    inc esi                                ; 前進 inputStr
-    inc edi                                ; 前進 formatPrefix
-    jmp compare_loop
-
-; 解析數字部分
-check_sign:
-	; 檢查負號
-    mov al, [esi]
-    cmp al, '-'
-    jne parse_number
-    mov isNegative, 1        ; 設置負數標誌
-    inc esi                  ; 跳過負號
-
-parse_number:
-    xor edx, edx                         ; 用於儲存整數部分
-    
-integer_part:
-    mov al, [esi]
-    cmp al, '.'
-    je start_decimal
-    
-    cmp al, '0'
-    jb check_end
-    cmp al, '9'
-    ja check_end
-    
-    ; 處理整數數字
-    sub al, '0'
-    imul edx, 10
-    movzx ecx, al
-    add edx, ecx
-    inc esi
-    jmp integer_part
-    
-start_decimal:
-    ; 將整數部分轉換為浮點數
-    push edx
-    fild dword ptr [esp]
-    add esp, 4
-    
-    inc esi                              ; 跳過小數點
-    fld decimal_mult                     ; 載入 0.1
-    
-decimal_part:
-    mov al, [esi]
-    cmp al, '0'
-    jb store_result
-    cmp al, '9'
-    ja store_result
-    
-    ; 處理小數部分
-    sub al, '0'
-    movzx edx, al
-    push edx
-    fild dword ptr [esp]                 ; 載入數字
-    add esp, 4
-    fmul st(0), st(1)                   ; 乘以當前小數位權重
-    faddp st(2), st(0)                  ; 加到結果中
-    
-    ; 更新小數位權重
-    fld st(0)
-    fld ten
-    fdivp st(1), st(0)
-    fstp st(1)
-    
-    inc esi
-    jmp decimal_part
-
-store_result:
-    ; 儲存結果
-    fstp st(0)
-	; 如果是負數，改變符號
-    cmp isNegative, 0
-    je save_result
-    fchs                    ; 改變符號 (change sign)
-
-save_result:
-	mov ebx, floatResult
-	fstp dword ptr [ebx]
-    jmp exit_parse
-    
-check_end:
-    cmp al, 0
-    jne start_decimal                     ; 非法字元
-    
-parse_error:
-    mov eax, 0                          ; 返回失敗
-    
-exit_parse:
-
-    ret
-parseFormatFloat endp
-
-
-ParseNoteChart PROC filename:DWORD
-	LOCAL filePtr:PTR FILE
-	LOCAL line[256]:BYTE
-	LOCAL inNoteSection:DWORD
-	LOCAL bar:PTR BYTE
-	LOCAL context:ptr byte
-	local barlength:DWORD
-	local validNotes:DWORD
-	local i:DWORD
-	local note:byte
-	local l_currentTIme:real4
-	local beatTime:real4
-	local barTime:real4
-	local noteInterval:real4
-
-	; init variables
-	mov inNoteSection, 0
-	fldz ; l_currentTime 0
-
-	; open file
-	push offset readA
-	push filename
-	call fopen
-	add esp, 8
-	mov filePtr, eax
-
-	test eax, eax
-	jz FileOpenError
-	
-
-	ParseLineLoop:
-		; read first line
-		push filePtr
-		push 256
-		lea eax, line
-		push eax
-		call fgets
-		add esp, 12
-
-		test eax, eax
-		jz EndParse
-
-		; remove \n
-		push offset breakline
-		lea eax, line
-		push eax
-		call strcspn
-		add esp, 8
-
-		movzx ecx, al
-		mov byte ptr [line + ecx], 0
-
-		; check bpm
-		push 4
-		push offset str_bpm
-		lea eax, line
-		push eax
-		call strncmp
-		add esp, 12
-
-		test eax, eax
-		jnz CheckOffset
-
-		push offset msInfo.bpm
-		mov eax, offset getBpm
-		push eax
-		lea eax, line
-		push eax
-		call parseFormatFloat
-		add esp, 12
-
-		jmp ParseLineLoop
-
-		; check offset
-	
-	CheckOffset:
-		push 7
-		push offset getOffset
-		lea eax, line
-		push eax
-		call strncmp
-		add esp, 12
-
-		test eax, eax
-		jnz CheckStart
-
-		push offset msInfo._offset
-		mov eax, offset getOffset
-		push eax
-		lea eax, line
-		push eax
-		call parseFormatFloat
-		add esp, 12
-
-		jmp ParseLineLoop
-
-	CheckStart:
-		push 6
-		push offset str_start
-		lea eax, line
-		push eax
-		call strncmp
-		add esp, 12
-
-		test eax, eax
-		jnz CheckEnd
-		mov inNoteSection, 1
-		jmp ParseLineLoop
-
-	CheckEnd:
-		push 4
-		push offset str_end
-		lea eax, line
-		push eax
-		call strncmp
-		add esp, 12
-
-		test eax, eax
-		jz EndParse
-	
-		cmp inNoteSection, 1
-		jnz ParseLineLoop
-
-		; allocate notes
-		lea eax, context
-		push eax
-		push offset comma
-		lea eax, line
-		push eax
-		call strtok_s
-		add esp, 12
-
-		test eax, eax
-		jz ParseLineLoop
-
-		mov bar, eax
-
-	ProcessBar:
-		; get bar length
-		push bar
-		call strlen
-		add esp, 4
-
-		mov barlength, eax
-
-		; get valid notes
-		mov validNotes, 0
-		mov ecx, barlength
-
-		xor esi, esi                 ; esi 作為索引 i，初始化為 0
-		xor eax, eax                 ; eax 作為暫存器
-		mov ecx, [barLength]         ; ecx = barLength
-		mov ebx, bar
-	CountValidNotes:
-		cmp esi, ecx                 ; 如果 i >= barLength 則跳出迴圈
-		jge ComputeNoteTiming
-
-		mov eax, [ebx]   ; 加載 bar[i] 到 al
-		cmp al, '0'                  ; 如果 bar[i] < '0'
-		jb SkipNote
-		cmp al, '2'                  ; 如果 bar[i] > '2'
-		ja SkipNote
-		inc validNotes    ; 有效音符計數 +1
-
-	SkipNote:
-		inc esi   ; i++
-		inc ebx
-		jmp CountValidNotes
-
-	ComputeNoteTiming:
-		; check if there are notes in the bar
-		mov eax, validNotes
-		cmp eax, 0
-		je ProcessNextBar
-
-		; calculate note time
-		fld dword ptr [msInfo.bpm]
-		fld1
-		fdiv
-		fmul dword ptr [real_60]
-		fstp beatTime	; beatTime = 60 / bpm
-		fmul dword ptr [real_4]
-		fstp barTime	; barTime = 4 * beatTime
-		fld barTIme
-		fdiv validNotes
-		fstp noteInterval  ; noteInterval = barTime / validNotes
-
-		mov ecx, 0
-		mov esi, bar
-        
-	NoteLoop:
-		cmp ecx, barlength
-		jge ProcessNextBar
-
-		mov al, [esi+ecx]
-		cmp al, '0'
-		jb SkipToNextNote
-		cmp al, '2'
-		ja SkipToNextNote
-        cmp al, '0'
-        je updateTime
-
-		; store note and timing
-        sub al, '0'
-        mov ebx, totalNotes
-        mov edi, offset notes
-		mov [edi+ebx], eax
-
-        mov eax, dword ptr [l_currentTime]
-        mov edi, offset noteTimings
-        mov [edi+ebx], eax
-
-		inc totalNotes
-
-    updateTime:
-        fld l_currentTIme
-        fld noteInterval
-        fadd
-		fstp l_currentTIme
-
-	SkipToNextNote:
-		inc ecx
-		jmp NoteLoop
-
-	ProcessNextBar:
-		lea eax, context
-		push eax
-		push offset comma
-		push 0
-		call strtok_s
-		add esp, 12
-
-		test eax, eax
-		jnz ProcessBar
-		mov bar, eax
-
-		jmp ParseLineLoop
-
-	EndParse:
-
-		push filePtr
-		call fclose
-		add esp, 4
-
-		fld dword ptr [msInfo.bpm]
-		fmul dword ptr [real_4]
-		fld1
-		fdiv
-		fmul dword ptr [real_60000]
-		fstp noteSpawnInterval
-
-		mov eax, SCREEN_WIDTH
-		sub eax, HIT_POSITION_X
-
-		push eax
-		fild dword ptr [esp]
-		add esp, 4
-
-		fld dword ptr [barTime]
-		fdiv
-		fstp dword ptr [drumStep]
-
-		ret
-
-	FileOpenError:
-		ret
-ParseNoteChart ENDP
+readNoteChart ENDP
 
 isQueueFull PROC
     mov eax, _size
@@ -578,8 +198,8 @@ spawnDrum PROC USES esi edi _type:DWORD, targetTime:REAL4
 
 	mov eax, _type
     mov dword ptr [esi+4], eax
-    fld targetTime
-    fstp dword ptr [esi+8]
+    movss xmm0, targetTime
+    movss dword ptr [esi+8], xmm0
     
 
     ; 設置音符的紋理
@@ -587,24 +207,24 @@ spawnDrum PROC USES esi edi _type:DWORD, targetTime:REAL4
     jne SetBlueTexture
     push sfTrue
     push OFFSET redDrumTexture
-    push [esi+8]
+    push [esi]
     call sfSprite_setTexture
+    add esp, 12
     jmp DoneTexture
 SetBlueTexture:
     push sfTrue
     push OFFSET blueDrumTexture
-    push [esi+8]
+    push [esi]
     call sfSprite_setTexture
+    add esp, 12
 DoneTexture:
 
     ; 設置初始位置
     push 200
     push SCREEN_WIDTH
-    lea eax, [esp]
-    push eax
-    push [esi+8]
+    push [esi]
     call sfSprite_setPosition
-    add esp, 8
+    add esp, 12
 
     ; 將Drum加入隊列
     push esi
@@ -904,7 +524,7 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
 	
 	mov dword ptr [noteChart], offset chart
 	push dword ptr [noteChart]
-	call ParseNoteChart
+	call readNoteChart
 	add esp, 4
 
 	; load background
@@ -951,15 +571,15 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
     test eax, eax
     je exit_program
 
-	fld real_1000000
     push spawnClock  ; 呼叫sfClock_getElapsedTime並獲取microseconds
     call sfClock_getElapsedTime
-    fstp st(0)                    ; 將結果放入浮點堆疊 (microseconds)
+    cvtsi2ss xmm1, eax
+
+    movss xmm0, [real_1000000]
+    divss xmm1, xmm0
 
     ; 除以1000000.0以轉換為秒
-
-    fdiv                        ; st(0) = st(0) / divisor
-    fst currentTIme             ; 儲存結果到currentTime
+    movss dword ptr [currentTime], xmm1
 
 	mov eax, gameStarted
 	cmp eax, 0
@@ -973,11 +593,9 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
 	je skip_music_play
 
 	; 比較 currentTime >= msInfo_offset
-    fld msInfo._offset               ; st(0) = musicInfo.offset
-    fld currentTime                  ; st(1) = musicInfo.offset, st(0) = currentTime
-    fcomip st(0), st(1)              ; 比較 st(0) 與 st(1)
+    movss xmm0, [msInfo._offset]     ; 加載 musicInfo.offset
+    ucomiss xmm1, xmm0               ; 比較 currentTime 和 musicInfo.offset
     jb skip_music_play               ; 如果 currentTime < musicInfo.offset 跳過
-    fstp st(0)                       ; 清除浮點堆疊
 
     ; 比較 msInfo_offset > 0
     fldz                             ; st(0) = 0.0
@@ -1043,7 +661,7 @@ deter_offset:
         call sfRenderWindow_pollEvent
         add esp, 8
         test eax, eax
-        je @render_window
+        je @controll_drum
     
         ; 檢查關閉事件
         cmp dword ptr [esi].sfEvent._type, sfEvtClosed
@@ -1088,16 +706,15 @@ check_gameStarted:
 		cmp eax, 0
 		je @render_window
 
-		; 呼叫sfClock_getElapsedTime並獲取microseconds
-        fld real_1000000
-		push spawnClock
-		call sfClock_getElapsedTime
-		add esp, 4
-		fstp st(0)                    ; 將結果放入浮點堆疊 (microseconds)
+        push spawnClock  ; 呼叫sfClock_getElapsedTime並獲取microseconds
+        call sfClock_getElapsedTime
+        cvtsi2ss xmm1, eax
 
-		; 除以1000000.0以轉換為秒
-		fdiv                        ; st(0) = st(0) / divisor
-		fst currentTime             ; 儲存結果到currentTime
+        movss xmm0, [real_1000000]
+        divss xmm1, xmm0
+
+        ; 除以1000000.0以轉換為秒
+        movss dword ptr [currentTime], xmm1
 
 spawn_loop:
         ;比較currentNoteIndex < totalNotes
@@ -1107,13 +724,12 @@ spawn_loop:
         jae skip_spawn
 
         ; 比較 currentTime >= noteTimings[currentNoteIndex]
-        fld currentTime                         ; st(0) = currentTime
+        movss xmm0, [currentTime]              ; 加載 currentTime
         mov ebx, currentNoteIndex               ; ebx = currentNoteIndex
         shl ebx, 2                              ; 計算索引的位移 (4字節對齊)
-        fld noteTimings[ebx]                    ; st(1) = noteTimings[currentNoteIndex]
-        fcomip st(0), st(1)                     ; 比較 currentTime 與 noteTimings
+        movss xmm1, noteTimings[ebx]            ; 加載 noteTimings[currentNoteIndex]
+        ucomiss xmm0, xmm1                      ; 比較 currentTime 與 noteTimings
         jb loop_end                             ; 如果 currentTime < noteTimings, 跳過迴圈
-        fstp st(0)                              ; 清除浮點堆疊
 
         ; 檢查 notes[currentNoteIndex] != 0
         mov eax, currentNoteIndex               ; eax = currentNoteIndex
@@ -1122,9 +738,11 @@ spawn_loop:
         je skip_spawn                           ; 如果等於0，跳過 spawnDrum
 
         ; 呼叫 spawnDrum(notes[currentNoteIndex], noteTimings[currentNoteIndex])
-        push noteTimings[ebx]                   ; 推入 noteTimings[currentNoteIndex]
-        push ebx                                ; 推入 notes[currentNoteIndex]
-        call spawnDrum                          ; 呼叫 spawnDrum 函式
+
+        sub esp, 4
+        movss dword ptr [esp], xmm1               ; 將noteTimings[currentNoteIndex]壓入堆疊
+        push ebx                                ; 將notes[currentNoteIndex]壓入堆疊
+        call spawnDrum
         add esp, 8                              ; 清理堆疊
 
     skip_spawn:
@@ -1191,6 +809,7 @@ spawn_loop:
 
         jmp @end_game
 
+    @display:
         ; 繪製判定圓
         push 0
         mov eax, judgmentCircle
@@ -1200,10 +819,11 @@ spawn_loop:
         call sfRenderWindow_drawCircleShape
         add esp, 12
 
-    @display:
         push window
         call sfRenderWindow_display
         add esp, 4
+
+        jmp @main_loop
 
 @end:
 

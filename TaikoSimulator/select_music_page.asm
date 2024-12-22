@@ -16,7 +16,7 @@ Button ENDS
 .data
     ; 檔案路徑
     ;music1_path db "assets/main/song1.ogg", 0
-    music1_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
+    music1_path db "assets/game/Yoru ni Kakeru.ogg", 0
 
     music2_path db "assets/main/song2.ogg", 0
     music3_path db "assets/main/song3.ogg", 0
