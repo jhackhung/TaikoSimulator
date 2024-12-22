@@ -31,6 +31,8 @@ INITIAL_DELAY = 3
 	bgPath db "assets/game/bg_genre_2.png", 0
 	redNotePath db "assets/game/red_note.png", 0
 	blueNotePath db "assets/game/blue_note.png", 0
+    red_note_sound_path db "assets/game/redmote.wav", 0
+    blue_note_sound_path db "assets/main/bluemote.wav", 0
 
 	stats GameStats <>
 	msInfo MusicInfo <130.000000, -1.962000, 115.384613>
@@ -534,6 +536,31 @@ done_processing:
 
 processHit endp
 
+;¼½©ñ­µ®Ä
+rednote_sound PROC
+    push offset red_note_sound_path
+    call sfMusic_createFromFile
+    add esp, 4 
+    mov music, eax
+
+    push eax
+    call sfMusic_play
+    add esp, 4
+    ret
+rednote_sound ENDP
+
+bluenote_sound PROC
+    push offset blue_note_sound_path
+    call sfMusic_createFromFile
+    add esp, 4 
+    mov music, eax
+
+    push eax
+    call sfMusic_play
+    add esp, 4
+    ret
+bluenote_sound ENDP
+
 main_game_page PROC window:dword,musicPath:dword,noteChart:dword
 	
 	mov dword ptr [noteChart], offset chart
@@ -716,14 +743,21 @@ check_gameStarted:
             
             jmp @event_loop
 	@red_pressed:
+        ;call rednote_sound
+        ;push eax
+        ;add esp, 4
 		push 1
 		call processHit
-		add esp, 4
+		add esp, 8
 		jmp @controll_drum
+
 	@blue_pressed:
+        call bluenote_sound
+        push eax
+        add esp, 4
 		push 2
 		call processHit
-		add esp, 4
+		add esp, 8
 		jmp @controll_drum
 
 	@controll_drum:

@@ -163,6 +163,10 @@
     <None Include="csfml.inc" />
     <None Include="file.inc" />
   </ItemGroup>
+  <ItemGroup>
+    <Media Include="assets\game\bluenote.wav" />
+    <Media Include="assets\game\rednote.wav" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
