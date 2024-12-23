@@ -90,7 +90,7 @@ Button ENDS
     countGood_x dd 520.0  
     countMiss_x dd 705.0  
     countCombo_x dd 890.0
-    countScore_x dd 578.0  
+    countScore_x dd 587.0  
     countScore_y dd 94.0 
 
     ; ÃC¦â±`¼Æ
