@@ -15,19 +15,17 @@ Button ENDS
 
 .data
     ; 檔案路徑
-    music1_path db "assets/main/song1.ogg", 0
-    ;music1_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
-
-    music2_path db "assets/main/song2.ogg", 0
-    music3_path db "assets/main/song3.ogg", 0
+    music1_path db "assets/music/Yoru ni Kakeru.ogg", 0
+    music2_path db "assets/music/Zen Zen Zense.ogg", 0
+    music3_path db "assets/music/song123.ogg", 0
     bg_path db "assets/main/song_select_bg.jpg", 0
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
    
     ; 提示文字
-    song1_string db "Song 1", 0
-    song2_string  db "Song 2", 0
-    song3_string  db "Song 3", 0
-    instruction_string db "Introduction", 0
+    song1_string db "Yoru ni Kakeru", 0
+    song2_string  db "Zen Zen Zense", 0
+    song3_string  db "Angle Dream", 0
+    instruction_string db "Use A/S/D to select songs", 0Dh, 0Ah, 0Dh, 0Ah,"F/J to hit the red note   K/D to hit the blue note", 0
     
     ; CSFML物件
     ; window dd 0
@@ -87,7 +85,7 @@ Button ENDS
     const_160 dd 160.0
     const_260 dd 260.0
     const_360 dd 360.0
-    const_550 dd 550.0
+    const_550 dd 520.0
 
 .code
 

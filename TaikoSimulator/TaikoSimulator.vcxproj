@@ -71,21 +71,22 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>C:\CSFML\include\SFML;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\SFML-3.0.0\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir);C:\Users\User\source\repos\TaikoSimulator\Debug\;%(AdditionalLibraryDirectories);C:\Irvine</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Irvine32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);csfml-graphics.lib
-;csfml-window.lib
-;csfml-system.lib;csfml-audio.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir);C:\Users\User\source\repos\TaikoSimulator\Debug\;%(AdditionalLibraryDirectories);C:\Irvine;C:\SFML-3.0.0\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Irvine32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies);csfml-graphics.lib;csfml-window.lib;csfml-system.lib;csfml-audio.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;sfml-audio.lib</AdditionalDependencies>
       <GenerateMapFile>true</GenerateMapFile>
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
@@ -155,11 +156,13 @@
   <ItemGroup>
     <MASM Include="end_game_page.asm" />
     <MASM Include="main.asm" />
+    <MASM Include="main_game_page.asm" />
     <MASM Include="main_page.asm" />
     <MASM Include="select_music_page.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include="csfml.inc" />
+    <None Include="file.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,0 +1,177 @@
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/09/24 05:43:14
+C:\Users\pearl\OneDrive\桌面\asm_project\asm_project\main.asm  Page 1 - 1
+
+
+				.386
+				.model flat, stdcall
+				option casemap:none
+
+				include csfml.inc
+			      C ; CSFML.INC - SFML Definitions for x86 Assembly
+			      C ; 使用 MASM 語法
+			      C 
+			      C ; Include the required SFML libraries
+			      C includelib csfml-graphics.lib
+			      C includelib csfml-window.lib
+			      C includelib csfml-system.lib
+			      C includelib csfml-audio.lib
+			      C includelib msvcrt.lib ; 包括 C 標準函式庫連結
+			      C 
+			      C ; Define boolean values
+ = 00000000		      C sfFalse     equ 0
+ = 00000001		      C sfTrue      equ 1
+			      C 
+			      C ; Define the SFML event type
+ = 00000000		      C sfEvtClosed               equ 0
+ = 00000001		      C sfEvtResized              equ 1
+ = 00000002		      C sfEvtLostFocus            equ 2
+ = 00000003		      C sfEvtGainedFocus          equ 3
+ = 00000004		      C sfEvtTextEntered          equ 4
+ = 00000005		      C sfEvtKeyPressed           equ 5
+ = 00000006		      C sfEvtKeyReleased          equ 6
+ = 00000008		      C sfEvtMouseButtonPressed   equ 8
+ = 00000009		      C sfEvtMouseButtonReleased  equ 9
+ = 0000000A		      C sfEvtMouseMoved           equ 10
+			      C 
+			      C ; Define pointer types
+			      C EXTERN sfRenderWindow_create:PROC
+			      C EXTERN sfRenderWindow_destroy:PROC
+			      C EXTERN sfRenderWindow_close:PROC
+			      C EXTERN sfRenderWindow_isOpen:PROC
+			      C EXTERN sfRenderWindow_clear:PROC
+			      C EXTERN sfRenderWindow_display:PROC
+			      C EXTERN sfRenderWindow_pollEvent:PROC
+			      C EXTERN sfMouse_getPositionRenderWindow:PROC
+			      C 
+			      C EXTERN printf:PROC
+			      C EXTERN exit:PROC
+			      C 
+
+ 00000000			.data
+ 00000000 4D 79 20 53 46	window_title db "My SFML Window", 0
+	   4D 4C 20 57 69
+	   6E 64 6F 77 00
+ 0000000F 45 72 72 6F 72	error_msg db "Error occurred!", 0
+	   20 6F 63 63 75
+	   72 72 65 64 21
+	   00
+
+ 00000000			.code
+ 00000000			main PROC
+				    ; Create SFML window
+ 00000000  68 00000320		    push 800                  ; width
+ 00000005  68 00000258		    push 600                  ; height
+ 0000000A  6A 20		    push 32                   ; bits per pixel
+				    push sfClose or sfTitlebar ; window style
+C:\Users\pearl\OneDrive\桌面\asm_project\asm_project\main.asm(17) : error A2006:undefined symbol : sfClose
+ 0000000C  68 00000000 R	    push offset window_title
+ 00000011  E8 00000000 E	    call sfRenderWindow_create
+ 00000016  8B 04 24		    mov eax, [esp]
+ 00000019  85 C0		    test eax, eax
+ 0000001B  74 44		    jz window_error
+
+				    ; Main loop
+ 00000027			main_loop:
+ 00000027  50			    push eax
+ 00000028  E8 00000000 E	    call sfRenderWindow_isOpen
+ 0000002D  85 C0		    test eax, eax
+ 0000002F  74 28		    jz close_window
+
+				    push offset event
+C:\Users\pearl\OneDrive\桌面\asm_project\asm_project\main.asm(31) : error A2006:undefined symbol : event
+ 00000031  50			    push eax
+ 00000032  E8 00000000 E	    call sfRenderWindow_pollEvent
+
+				    push 0x000000FF         ; Clear to black
+C:\Users\pearl\OneDrive\桌面\asm_project\asm_project\main.asm(35) : error A2206:missing operator in expression
+ 00000037  50			    push eax
+ 00000038  E8 00000000 E	    call sfRenderWindow_clear
+
+ 0000003D  50			    push eax
+ 0000003E  E8 00000000 E	    call sfRenderWindow_display
+
+ 00000043  EB E2		    jmp main_loop
+
+ 00000059			close_window:
+ 00000059  50			    push eax
+ 0000005A  E8 00000000 E	    call sfRenderWindow_close
+ 0000005F  EB 11		    jmp cleanup
+
+ 00000061			window_error:
+ 00000061  68 0000000F R	    push offset error_msg
+ 00000066  E8 00000000 E	    call printf
+ 0000006B  6A 01		    push 1
+ 0000006D  E8 00000000 E	    call exit
+
+ 00000072			cleanup:
+ 00000072  6A 00		    push 0
+ 00000074  E8 00000000 E	    call exit
+
+ 00000079			main ENDP
+				END main
+Microsoft (R) Macro Assembler Version 14.42.34435.0	    12/09/24 05:43:14
+C:\Users\pearl\OneDrive\桌面\asm_project\asm_project\main.asm  Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000001F DWord	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000079 DWord	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000079 Public STDCALL
+  main_loop  . . . . . . . . . .	L Near	 00000027 _TEXT	
+  close_window . . . . . . . . .	L Near	 00000059 _TEXT	
+  window_error . . . . . . . . .	L Near	 00000061 _TEXT	
+  cleanup  . . . . . . . . . . .	L Near	 00000072 _TEXT	
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000003h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+error_msg  . . . . . . . . . . .	Byte	 0000000F _DATA	
+exit . . . . . . . . . . . . . .	L Near	 00000000 FLAT	External STDCALL
+printf . . . . . . . . . . . . .	L Near	 00000000 FLAT	External STDCALL
+sfEvtClosed  . . . . . . . . . .	Number	 00000000h   
+sfEvtGainedFocus . . . . . . . .	Number	 00000003h   
+sfEvtKeyPressed  . . . . . . . .	Number	 00000005h   
+sfEvtKeyReleased . . . . . . . .	Number	 00000006h   
+sfEvtLostFocus . . . . . . . . .	Number	 00000002h   
+sfEvtMouseButtonPressed  . . . .	Number	 00000008h   
+sfEvtMouseButtonReleased . . . .	Number	 00000009h   
+sfEvtMouseMoved  . . . . . . . .	Number	 0000000Ah   
+sfEvtResized . . . . . . . . . .	Number	 00000001h   
+sfEvtTextEntered . . . . . . . .	Number	 00000004h   
+sfFalse  . . . . . . . . . . . .	Number	 00000000h   
+sfMouse_getPositionRenderWindow 	L Near	 00000000 FLAT	External STDCALL
+sfRenderWindow_clear . . . . . .	L Near	 00000000 FLAT	External STDCALL
+sfRenderWindow_close . . . . . .	L Near	 00000000 FLAT	External STDCALL
+sfRenderWindow_create  . . . . .	L Near	 00000000 FLAT	External STDCALL
+sfRenderWindow_destroy . . . . .	L Near	 00000000 FLAT	External STDCALL
+sfRenderWindow_display . . . . .	L Near	 00000000 FLAT	External STDCALL
+sfRenderWindow_isOpen  . . . . .	L Near	 00000000 FLAT	External STDCALL
+sfRenderWindow_pollEvent . . . .	L Near	 00000000 FLAT	External STDCALL
+sfTrue . . . . . . . . . . . . .	Number	 00000001h   
+window_title . . . . . . . . . .	Byte	 00000000 _DATA	
+
+	   0 Warnings
+	   3 Errors
