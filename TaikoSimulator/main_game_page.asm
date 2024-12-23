@@ -27,13 +27,23 @@ INITIAL_DELAY = 3
     ALIGN 4
     abs_mask DD 7fffffffh, 0, 0, 0
 
+    ; 新增延遲相關變數
+    initial_delay_1 real4 2.0    ; 設定 2 秒延遲
+    delay_started dword 0      ; 追蹤延遲是否開始
+    delay_clock dword 0        ; 用於計時的時鐘
+
 	consoleHandle dd ?
 	event sfEvent <>
 
+    redNoteSound dd 0    ; 紅色音符音效
+    blueNoteSound dd 0   ; 藍色音符音效
+
 	chart db "assets/game/yoasobi.txt", 0
-	bgPath db "assets/game/bg_genre_2.png", 0
+	bgPath db "assets/game/bg_genre_2.jpg", 0
 	redNotePath db "assets/game/red_note.png", 0
 	blueNotePath db "assets/game/blue_note.png", 0
+    red_note_sound_path db "assets/main/rednote.wav", 0
+    blue_note_sound_path db "assets/main/bluenote.wav", 0
 
 	stats GameStats <0, 0, 0, 0, 0, 0>
 	msInfo MusicInfo <130.000000, -1.962000, 115.384613>
@@ -74,15 +84,16 @@ INITIAL_DELAY = 3
 	gameStarted dword 0
 
 	; note chart
-	notes dword 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1
-	totalNotes dword 23
+	notes dword 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 1
+	totalNotes dword 30
 	noteSpawnInterval real4 0.0
-	noteTimings real4 0.000000, 0.923077, 1.846154, 2.769229, 3.653842, 7.384611, 8.307688, 9.230764, 10.153841, 11.076918, 12.884617, 14.769233, 15.692309, 16.615387, 17.538464, 18.461540, 19.384617, 20.307693, 22.153847, 23.076923, 24.000000, 24.923077, 25.846153
+	noteTimings real4 0.000000, 0.923077, 1.846154, 2.769229, 3.653842, 7.384611, 8.307688, 9.230764, 10.153841, 11.076918, 12.884617, 14.769233, 15.692309, 16.615387, 17.538464, 18.461540, 19.384617, 20.307693, 22.153847, 23.076923, 24.000000, 24.923077, 25.846153, 26.769230, 27.692307, 28.615384, 29.538461, 30.461538, 31.384615, 32.307692
 	drumStep real4 7.493056
 
 	; color
 	blackColor sfColor <0, 0, 0, 255>
-	transparentColor sfColor <0, 0, 0, 50>
+    white_color sfColor <230, 230, 230, 200>
+	transparentColor sfColor <255, 255, 255, 50>
 
 	; file
 	readA byte "r", 0
@@ -352,7 +363,7 @@ createJudgementCircle PROC USES esi edi
     add esp, 8
 
     ; 設置邊框顏色
-    push blackColor
+    push white_color
     push dword ptr [judgementCircle]
     call sfCircleShape_setOutlineColor
     add esp, 8
@@ -440,43 +451,35 @@ processHit proc uses ebx esi edi hitType:DWORD
     call sfSprite_getPosition
     add esp, 4
     
-    ; 計算與判定線的距離
+    ; 計算與判定線的距離 (450是判定線位置)
     subss xmm0, real_450
     
     ; 取絕對值
     andps xmm0, [abs_mask]
     
-    ; 檢查音符類型是否匹配
+    ; 首先檢查音符類型是否匹配
     mov edx, dword ptr [esi+4]
     cmp edx, [hitType]
-    jne @miss_hit
+    jne @miss_hit         ; 如果類型不匹配，直接判定為MISS
     
-    ; 檢查是否在great範圍內
-    comiss xmm0, real_great_threshold
+    ; GREAT判定 (誤差 <= 25)
+    movss xmm1, real_30       ; 載入判定圈半徑
+    subss xmm1, real_4        ; 25單位
+    comiss xmm0, xmm1         ; 比較音符中心點距離是否 <= 25
     jbe @great_hit
     
-    ; 檢查是否在good範圍內
-    comiss xmm0, real_good_threshold
+    ; MISS判定 (誤差 > 40)
+    movss xmm2, real_30       ; 載入判定圈半徑
+    addss xmm2, real_2        ; 加上10個單位
+    addss xmm2, real_2
+    addss xmm2, real_2
+    addss xmm2, real_2
+    addss xmm2, real_2
+    comiss xmm0, xmm2         ; 比較是否 > 40
     ja @miss_hit
     
-@good_hit:
-    ; 直接操作記憶體中的計數器
-    mov eax, offset stats
-    inc dword ptr [eax]              ; great_count
-    inc dword ptr [eax+12]           ; current_combo
-    
-    ; 計算分數 (combo * 5 + 100)
-    mov ecx, dword ptr [eax+12]      ; 取得current_combo
-    imul ecx, 5
-    add ecx, 100
-    add dword ptr [eax+20], ecx      ; 加到total_score
-    
-    ; 更新max_combo
-    mov ecx, dword ptr [eax+12]      ; current_combo
-    cmp ecx, dword ptr [eax+16]      ; 比較max_combo
-    jle @remove_note
-    mov dword ptr [eax+16], ecx      ; 更新max_combo
-    jmp @remove_note
+    ; 其餘情況 -> GOOD
+    jmp @good_hit
     
 @great_hit:
     mov eax, offset stats
@@ -487,6 +490,24 @@ processHit proc uses ebx esi edi hitType:DWORD
     mov ecx, dword ptr [eax+12]      ; 取得current_combo
     imul ecx, 10
     add ecx, 300
+    add dword ptr [eax+20], ecx      ; 加到total_score
+    
+    ; 更新max_combo
+    mov ecx, dword ptr [eax+12]      ; current_combo
+    cmp ecx, dword ptr [eax+16]      ; 比較max_combo
+    jle @remove_note
+    mov dword ptr [eax+16], ecx      ; 更新max_combo
+    jmp @remove_note
+    
+@good_hit:
+    mov eax, offset stats
+    inc dword ptr [eax+4]            ; good_count
+    inc dword ptr [eax+12]           ; current_combo
+    
+    ; 計算分數 (combo * 5 + 100)
+    mov ecx, dword ptr [eax+12]      ; 取得current_combo
+    imul ecx, 5
+    add ecx, 100
     add dword ptr [eax+20], ecx      ; 加到total_score
     
     ; 更新max_combo
@@ -510,6 +531,47 @@ processHit proc uses ebx esi edi hitType:DWORD
 
 processHit endp
 
+;播放音效
+initializeSounds PROC
+    ; 創建紅色音符音效
+    push offset red_note_sound_path
+    call sfMusic_createFromFile
+    add esp, 4
+    mov redNoteSound, eax
+
+    ; 創建藍色音符音效
+    push offset blue_note_sound_path
+    call sfMusic_createFromFile
+    add esp, 4
+    mov blueNoteSound, eax
+
+    ret
+initializeSounds ENDP
+
+; 修改紅色音符音效函數
+rednote_sound PROC
+    push redNoteSound
+    call sfMusic_stop    ; 先停止之前的播放
+    add esp, 4
+
+    push redNoteSound
+    call sfMusic_play    ; 播放音效
+    add esp, 4
+    ret
+rednote_sound ENDP
+
+; 修改藍色音符音效函數
+bluenote_sound PROC
+    push blueNoteSound
+    call sfMusic_stop    ; 先停止之前的播放
+    add esp, 4
+
+    push blueNoteSound
+    call sfMusic_play    ; 播放音效
+    add esp, 4
+    ret
+bluenote_sound ENDP
+
 main_game_page PROC window:dword,musicPath:dword,noteChart:dword
     mov eax, offset stats
     mov dword ptr [eax], 0      ; great_count
@@ -521,6 +583,7 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
 
     ; load background
     call @ld_background
+    call initializeSounds    ; 初始化音效
 
     ; load red note texture
     push 0
@@ -554,6 +617,10 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
     call sfClock_create
     mov spawnClock, eax
 
+    ; 創建延遲計時器
+    call sfClock_create
+    mov delay_clock, eax
+
 @main_loop:
     mov eax, DWORD PTR [window]
     push eax
@@ -562,47 +629,47 @@ main_game_page PROC window:dword,musicPath:dword,noteChart:dword
     test eax, eax
     je exit_program
 
-    push spawnClock
+    ; 檢查延遲狀態
+    mov eax, delay_started
+    cmp eax, 0
+    jne check_game_start    ; 如果延遲已經開始，檢查遊戲開始
+
+    ; 開始延遲計時
+    mov delay_started, 1
+    push delay_clock
+    call sfClock_restart
+    add esp, 4
+    jmp @event_loop
+
+check_game_start:
+    ; 檢查是否已經過了延遲時間
+    push delay_clock
     call sfClock_getElapsedTime
     cvtsi2ss xmm1, eax
-
+    
     movss xmm0, [real_1000000]
-    divss xmm1, xmm0
+    divss xmm1, xmm0        ; 轉換為秒
+    
+    movss xmm0, dword ptr [initial_delay_1]
+    comiss xmm1, xmm0       ; 比較是否超過延遲時間
+    jb @event_loop          ; 如果還沒超過延遲時間，繼續等待
 
-    movss dword ptr [currentTime], xmm1
-
+    ; 如果超過延遲時間且遊戲還沒開始，開始遊戲
     mov eax, gameStarted
     cmp eax, 0
     jne deter_offset
 
-    ; check game start
-    push music 
-    call sfMusic_getStatus
-    add esp, 4
-    cmp eax, sfPlaying
-    je skip_music_play
-
-    movss xmm0, [msInfo._offset]
-    ucomiss xmm1, xmm0
-    jb skip_music_play
-
-    fldz
-    fld msInfo._offset
-    fcomip st(0), st(1)
-    jbe skip_music_play
-    fstp st(0)
-
+    ; 開始播放音樂
     push music
     call sfMusic_play
     add esp, 4
 
-skip_music_play:
     push spawnClock
     call sfClock_restart
+    add esp, 4
 
     fldz
     fstp gameStartTime
-
     mov gameStarted, 1
 
 deter_offset:
@@ -673,11 +740,13 @@ deter_offset:
             jmp @event_loop
 
             @handle_red:
+                call rednote_sound
                 push 1                   ; 紅色音符類型
                 call processHit
                 jmp @controll_drum
 
             @handle_blue:
+                call bluenote_sound
                 push 2                   ; 藍色音符類型
                 call processHit
                 jmp @controll_drum
@@ -833,6 +902,20 @@ draw_notes:
     call sfText_destroy
     add esp, 4
 
+    ; 釋放紅色音符音效
+    push redNoteSound
+    call sfMusic_destroy
+    add esp, 4
+
+    ; 釋放藍色音符音效
+    push blueNoteSound
+    call sfMusic_destroy
+    add esp, 4
+
+    push music
+    call sfMusic_destroy
+    add esp, 4
+
 @end_game:
     push music
     call sfMusic_stop    ; 停止音樂
@@ -840,9 +923,9 @@ draw_notes:
 
     push dword ptr [stats+16]    ; max_combo
     push dword ptr [stats+20]    ; total_score
-    push dword ptr [stats+8]     ; miss_count
+    push dword ptr [stats+8]       ; miss_count
     push dword ptr [stats+4]     ; good_count
-    push dword ptr [stats]       ; great_count
+    push dword ptr [stats]     ; great_count
     push window
     call end_game_page
     add esp, 24
