@@ -453,6 +453,7 @@ processHit proc uses ebx esi edi hitType:DWORD
     
     ; 計算與判定線的距離 (450是判定線位置)
     subss xmm0, real_450
+    addss xmm0, real_30
     
     ; 取絕對值
     andps xmm0, [abs_mask]
