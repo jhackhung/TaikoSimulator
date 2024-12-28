@@ -86,9 +86,9 @@ INITIAL_DELAY = 3
 	; note chart
 	noteSpawnInterval real4 0.0
 	drumStep real4 7.493056
-    notes dword 100 dup (?)
+    notes dword 121 dup (?)
     totalNotes dword ?
-    noteTimings real4 100 dup (?)
+    noteTimings real4 121 dup (?)
 
 	; color
 	blackColor sfColor <0, 0, 0, 255>
@@ -842,6 +842,12 @@ skip_spawn:
 
 check_last_note:
     ; 檢查是否有音符在隊列中
+    ;push music
+    ;call sfMusic_getStatus
+    ;add esp, 4
+    ;cmp eax, sfStopped
+    ;jne @end_game
+
     mov eax, _size
     test eax, eax
     jz @end_game         ; 如果沒有音符且都已生成，結束遊戲
