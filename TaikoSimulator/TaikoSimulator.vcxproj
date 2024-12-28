@@ -155,11 +155,17 @@
   <ItemGroup>
     <MASM Include="end_game_page.asm" />
     <MASM Include="main.asm" />
+    <MASM Include="main_game_page.asm" />
     <MASM Include="main_page.asm" />
     <MASM Include="select_music_page.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include="csfml.inc" />
+    <None Include="file.inc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="assets\game\bluenote.wav" />
+    <Media Include="assets\game\rednote.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

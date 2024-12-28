@@ -2,8 +2,10 @@
 .XMM
 .model flat, c
 include csfml.inc
+include file.inc
 
 extern currentPage: DWORD
+extern main_game_page: proc
 
 BUTTON_STATE_NORMAL equ 0
 BUTTON_STATE_PRESSED equ 1
@@ -15,19 +17,49 @@ Button ENDS
 
 .data
     ; 檔案路徑
-    ;music1_path db "assets/main/song1.ogg", 0
-    music1_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0
-
-    music2_path db "assets/main/song2.ogg", 0
-    music3_path db "assets/main/song3.ogg", 0
+    music1_path db "assets/music/Yoru ni Kakeru.ogg", 0
+    music2_path db "assets/music/Zen Zen Zense.ogg", 0
+    music3_path db "assets/music/Zenryoku Shounen.ogg", 0
     bg_path db "assets/main/song_select_bg.jpg", 0
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
    
+   ; music1 資料
+   music1Info MusicInfo <130.000000, -1.962000, 115.384613>
+   music1_notes dword 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+                dword 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1
+                dword 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1
+   music1_totalNotes dword 90
+   music1_noteTimings real4 0.000000, 0.923077, 1.846154, 2.769229, 3.653842, 7.384611, 8.307688, 9.230764, 10.153841, 11.076918, 12.884617, 14.769233, 15.692309, 16.615387, 17.538464, 18.461540, 19.384617, 20.307693, 22.153847, 23.076923, 24.000000, 24.923077, 25.846153, 26.769230, 27.692307, 29.076921, 29.538460, 31.384613, 33.230766, 35.076920
+                real4 36.923073, 38.769226, 40.615379, 44.307686, 45.230762, 46.153839, 47.999992, 48.923069, 49.846146, 51.692299, 52.615376, 53.538452, 55.384605, 56.961456, 59.076828, 60.922981, 62.769135, 65.538368, 66.461449, 67.384529, 68.307610, 70.153763, 71.076843, 71.999924, 73.846077, 74.769157, 75.692238, 76.153778, 76.615318, 77.538399
+                real4 78.461479, 79.384560, 79.846100, 80.307640, 81.230721, 81.692261, 82.153801, 83.076881, 83.538422, 83.999962, 84.923042, 88.615349, 89.538429, 90.461510, 90.923050, 91.384590, 92.307671, 93.230751, 94.153831, 94.615372, 95.076912, 95.999992, 96.461533, 96.923073, 97.846153, 98.307693, 98.769234, 99.692314, 100.615395, 101.538475
+
+    music2Info MusicInfo <190.000000, -1.688, 78.947365>
+    music2_notes dword 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1
+                 dword 1, 2, 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 2, 1, 2, 1, 1, 1, 2, 2, 2, 2, 1, 2, 1, 1, 1, 1, 1, 2
+                 dword 2, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 1, 2, 1, 1, 1, 1, 2, 2
+                 dword 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 2, 1, 1, 1
+    music2_totalNotes dword 121
+    music2_noteTimings real4 0.963158, 1.910526, 3.489474, 4.121053, 4.752632, 5.068421, 5.384211, 6.015789, 6.647368, 7.278947, 7.594736, 7.910525, 8.542104, 9.173683, 9.805262, 10.121051, 10.436840, 11.068419, 12.147362, 12.331572, 13.278939, 13.594728, 14.226307, 15.489464, 16.121042, 18.647358, 18.963148, 19.278938, 19.910519, 20.226307
+                       real4 20.542095, 21.015778, 21.621038, 23.699982, 24.331560, 25.594717, 26.226295, 28.752609, 29.068399, 29.384190, 30.015770, 30.331560, 30.647350, 31.278931, 31.884192, 33.805279, 34.121067, 34.436855, 35.068432, 35.384220, 35.700008, 36.015797, 36.331585, 37.252701, 38.857986, 39.173775, 39.489563, 40.121140, 40.436928, 40.752716
+                       real4 41.068504, 41.384293, 43.279030, 43.910610, 44.226398, 44.542187, 45.173763, 45.489552, 45.805340, 46.121128, 46.436916, 48.331654, 48.963234, 50.226391, 50.857971, 51.489552, 52.752708, 54.015865, 55.279022, 55.910603, 56.542183, 58.726456, 59.068584, 60.331741, 60.963322, 61.594902, 61.910690, 62.226479, 62.700161, 63.331738
+                       real4 64.121208, 65.515938, 66.331665, 66.963219, 67.594795, 68.226372, 68.857948, 69.173737, 71.068474, 71.700050, 72.015846, 72.331642, 72.805336, 73.436928, 74.226418, 75.621147, 76.436874, 77.068428, 77.700005, 78.331589, 78.963181, 79.121078, 80.226341, 81.805290, 82.436867, 83.068443, 83.384239, 83.700035, 84.173729, 85.726357, 86.226318
     ; 提示文字
-    song1_string db "Song 1", 0
-    song2_string  db "Song 2", 0
-    song3_string  db "Song 3", 0
-    instruction_string db "Introduction", 0
+
+    music3Info MusicInfo <134.000000, -7.430000, 111.515877>
+    music3_notes dword 1, 2, 1, 2, 2, 1, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2
+                 dword 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+                 dword 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1
+                 dword 1, 2, 2, 1, 2, 1, 1, 1
+    music3_totalNotes dword 98
+    music3_noteTimings real4 5.373135, 7.164181, 8.955227, 10.746273, 11.417915, 12.537319, 12.985081, 13.880604, 14.776127, 15.671650, 16.119411, 17.835831, 19.701504, 20.149265, 21.044788, 21.940311, 22.835835, 23.283596, 25.000015, 26.865688, 28.656734, 29.552258, 30.447781, 30.895542, 32.238815, 33.134293, 33.805901, 35.820724, 36.716202, 37.387810
+                       real4 38.283287, 39.402634, 39.850372, 40.298111, 40.969719, 42.238312, 42.984543, 43.880020, 44.775497, 45.223236, 46.566452, 47.461929, 48.133537, 50.148361, 51.043839, 51.715446, 52.610924, 53.730270, 54.625748, 55.297356, 57.312180, 58.207657, 59.103134, 59.998611, 60.894089, 61.341827, 61.789566, 62.461174, 65.296982, 66.267181
+                       real4 66.714966, 68.058319, 68.729996, 69.625565, 70.894287, 71.640594, 72.088379, 72.536163, 73.879517, 74.327301, 75.222870, 75.670654, 76.118439, 77.461792, 77.909576, 78.805145, 79.252930, 80.596283, 81.044067, 81.491852, 81.939636, 82.387421, 84.178467, 85.969513, 86.417297, 86.865082, 88.208435, 88.656219, 89.551788, 89.999573
+                       real4 90.447357, 91.790710, 92.238495, 93.134064, 93.805740, 94.701309, 95.596878, 96.716339
+
+    song1_string db "Yoru ni Kakeru", 0
+    song2_string  db "Zen Zen Zense", 0
+    song3_string  db "Zenryoku Shounen", 0
+    instruction_string db "Use A/S/D to select songs", 0Dh, 0Ah, 0Dh, 0Ah,"F/J to hit the red note   K/D to hit the blue note", 0
     
     ; CSFML物件
     ; window dd 0
@@ -87,7 +119,7 @@ Button ENDS
     const_160 dd 160.0
     const_260 dd 260.0
     const_360 dd 360.0
-    const_550 dd 550.0
+    const_550 dd 520.0
 
 .code
 
@@ -834,17 +866,38 @@ select_music_page PROC window:DWORD
 
 @keyA_enter:
     mov DWORD PTR [currentPage], 2
-    mov ebx, offset music1_path
+    call cleanup
+    push offset music1Info
+    push offset music1_noteTimings
+    push offset music1_totalNotes
+    push offset music1_notes
+    push offset music1_path
+    push dword ptr [window]
+    call main_game_page
     jmp @exit_program
 
 @keyS_enter:
     mov DWORD PTR [currentPage], 2
-    mov ebx, offset music2_path
+    call cleanup
+    push offset music2Info
+    push offset music2_noteTimings
+    push offset music2_totalNotes
+    push offset music2_notes
+    push offset music2_path
+    push dword ptr [window]
+    call main_game_page
     jmp @exit_program
 
 @keyD_enter:
     mov DWORD PTR [currentPage], 2
-    mov ebx, offset music3_path
+    call cleanup
+    push offset music3Info
+    push offset music3_noteTimings
+    push offset music3_totalNotes
+    push offset music3_notes
+    push offset music3_path
+    push dword ptr [window]
+    call main_game_page
     jmp @exit_program
     
 @render_window: 
@@ -936,7 +989,6 @@ select_music_page PROC window:DWORD
     mov DWORD PTR [currentPage], -1
 
 @exit_program:
-    call cleanup
     xor eax, eax
     ret
 

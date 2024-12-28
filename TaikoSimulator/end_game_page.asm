@@ -14,7 +14,7 @@ Button STRUCT
 Button ENDS
 
 .data
-    music_path db "assets/never-gonna-give-you-up-official-music-video.mp3", 0   
+    music_path db "assets/music/Anata ni Koi wo Shite Mimashita.ogg", 0   
     bg_path db "assets/main/end_bg.jpg", 0
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
 
@@ -22,6 +22,7 @@ Button ENDS
     string1 db "Great", 0          
     string2 db "Good", 0
     string3 db "Miss", 0
+    string4 db "  Max", 0Dh, 0Ah,"Combo", 0
 
     ; CSFML物件
     bgTexture dd 0
@@ -35,6 +36,7 @@ Button ENDS
     countGood dd 0
     countMiss dd 0
     countScore dd 0
+    countCombo dd 0
 
     countGreatText dd 0
     countGreatStr db 20 dup(0)
@@ -48,13 +50,18 @@ Button ENDS
     countScoreText dd 0
     countScoreStr db 20 dup(0)
     buffer_3 db 20 dup(0)
+    countComboText dd 0
+    countComboStr db 20 dup(0)
+    buffer_4 db 20 dup(0)
 
     string1Text dd 0
     string2Text dd 0
     string3Text dd 0
+    string4Text dd 0
     string1Bounds sfFloatRect <>
     string2Bounds sfFloatRect <>
     string3Bounds sfFloatRect <>
+    string4Bounds sfFloatRect <>
 
     rect_shape Button <>
     score_shape Button <>
@@ -71,16 +78,19 @@ Button ENDS
 
     two dd 2.0
     four dd 4.0    
-    const_180 dd 180.0
-    const_360 dd 360.0
-    const_600 dd 600.0
-    const_840 dd 840.0
+    text_y dd 180.0
+    great_x dd 300.0
+    good_x dd 495.0
+    miss_x dd 690.0
+    combo_x dd 860.0
+    combo_y dd 160.0
 
-    countGreat_x dd 385.0 
+    countGreat_x dd 320.0 
     countGreat_y dd 250.0 
-    countGood_x dd 625.0  
-    countMiss_x dd 855.0  
-    countScore_x dd 588.0  
+    countGood_x dd 520.0  
+    countMiss_x dd 705.0  
+    countCombo_x dd 890.0
+    countScore_x dd 587.0  
     countScore_y dd 94.0 
 
     ; 顏色常數
@@ -91,6 +101,7 @@ Button ENDS
     trans_white_color sfColor <255, 255, 255, 185>
     gray_color sfColor <80, 80, 80, 255>
     blue_color sfColor <20, 60, 100, 185>
+    green_color sfColor <88, 148, 88, 255>
 
 .code
 
@@ -187,8 +198,8 @@ setup_string1_text PROC
     add esp, 8
     
     ; Set position
-    movss xmm0, DWORD PTR [const_180]  
-    movss xmm1, DWORD PTR [const_360]     
+    movss xmm0, DWORD PTR [text_y]  
+    movss xmm1, DWORD PTR [great_x]     
     sub esp, 8
     movss DWORD PTR [esp], xmm1          
     movss DWORD PTR [esp+4], xmm0     
@@ -255,8 +266,8 @@ setup_string2_text PROC
     add esp, 8
 
     ; Set position
-    movss xmm0, DWORD PTR [const_180]  
-    movss xmm1, DWORD PTR [const_600]    
+    movss xmm0, DWORD PTR [text_y]  
+    movss xmm1, DWORD PTR [good_x]    
     sub esp, 8
     movss DWORD PTR [esp], xmm1           
     movss DWORD PTR [esp+4], xmm0         
@@ -323,8 +334,8 @@ setup_string3_text PROC
     add esp, 8
 
     ; Set position
-    movss xmm0, DWORD PTR [const_180] 
-    movss xmm1, DWORD PTR [const_840]  
+    movss xmm0, DWORD PTR [text_y] 
+    movss xmm1, DWORD PTR [miss_x]  
     sub esp, 8
     movss DWORD PTR [esp], xmm1          
     movss DWORD PTR [esp+4], xmm0        
@@ -334,6 +345,74 @@ setup_string3_text PROC
 
     ret
 setup_string3_text ENDP
+
+; 設定String4文字
+setup_string4_text PROC
+    ; Create font
+    push offset font_path
+    call sfFont_createFromFile
+    add esp, 4
+    mov font, eax
+    
+    ; Create text object
+    call sfText_create
+    mov DWORD PTR [string4Text], eax
+    
+    ; Set font
+    push font
+    mov eax, DWORD PTR [string4Text]
+    push eax
+    call sfText_setFont
+    add esp, 8
+    
+    ; Set string
+    push offset string4
+    mov eax, DWORD PTR [string4Text]
+    push eax
+    call sfText_setString
+    add esp, 8
+    
+    ; Set character size
+    push 32
+    mov eax, DWORD PTR [string4Text]
+    push eax
+    call sfText_setCharacterSize
+    add esp, 8
+    
+    ; Set fill color
+    push white_color
+    mov eax, DWORD PTR [string4Text]
+    push eax
+    call sfText_setFillColor
+    add esp, 8
+   
+    ; Set outline color
+    push green_color
+    mov eax, DWORD PTR [string4Text]
+    push eax
+    call sfText_setOutlineColor
+    add esp, 8
+    
+    ; Set outline thickness
+    movss xmm0, DWORD PTR [four]  
+    sub esp, 4
+    movss DWORD PTR [esp], xmm0  
+    push DWORD PTR [string4Text]
+    call sfText_setOutlineThickness
+    add esp, 8
+
+    ; Set position
+    movss xmm0, DWORD PTR [combo_y] 
+    movss xmm1, DWORD PTR [combo_x]  
+    sub esp, 8
+    movss DWORD PTR [esp], xmm1          
+    movss DWORD PTR [esp+4], xmm0        
+    push DWORD PTR [string4Text]          
+    call sfText_setPosition
+    add esp, 12                    
+
+    ret
+setup_string4_text ENDP
 
 ; 設定countGreat文字
 setup_countgreat_text PROC
@@ -514,6 +593,66 @@ setup_countmiss_text PROC
 
     ret
 setup_countmiss_text ENDP
+
+; 設定countCombo文字
+setup_countcombo_text PROC
+
+    call sfText_create
+    mov DWORD PTR [countComboText], eax
+   
+    push font
+    mov eax, DWORD PTR [countComboText]
+    push eax
+    call sfText_setFont
+    add esp, 8
+   
+    push offset buffer_4
+    push dword ptr [countCombo]
+    call int_to_str_4
+    add esp, 8
+
+    push offset countComboStr
+    mov eax, DWORD PTR [countComboText]
+    push eax
+    call sfText_setString
+    add esp, 8
+   
+    push 40
+    mov eax, DWORD PTR [countComboText]
+    push eax
+    call sfText_setCharacterSize
+    add esp, 8
+   
+    push white_color
+    mov eax, DWORD PTR [countComboText]
+    push eax
+    call sfText_setFillColor
+    add esp, 8
+
+    push green_color
+    mov eax, DWORD PTR [countComboText]
+    push eax
+    call sfText_setOutlineColor
+    add esp, 8
+   
+    movss xmm0, DWORD PTR [four]  
+    sub esp, 4
+    movss DWORD PTR [esp], xmm0  
+    push DWORD PTR [countComboText]
+    call sfText_setOutlineThickness
+    add esp, 8
+
+    movss xmm0, DWORD PTR [countGreat_y]  
+    movss xmm1, DWORD PTR [countCombo_x]    
+    sub esp, 8
+    movss DWORD PTR [esp], xmm1          
+    movss DWORD PTR [esp+4], xmm0    
+    push DWORD PTR [countComboText]      
+    call sfText_setPosition
+    add esp, 12                  
+
+    ret
+setup_countcombo_text ENDP
 
 ; 設定countScore文字
 setup_countscore_text PROC
@@ -772,6 +911,52 @@ int_to_str_3 PROC
     ret
 int_to_str_3 ENDP
 
+; 整數轉字串的程序
+int_to_str_4 PROC
+    push ebp
+    mov ebp, esp
+
+    ; 參數：number(esp+8), buffer(esp+12)
+    mov eax, [ebp+8]   ; 取得數字
+    mov esi, [ebp+12]  ; 取得緩衝區位址
+    mov ecx, 10        ; 除數
+    mov edi, 0         ; 位數計數器
+
+    ; 特殊情況：數字為 0
+    test eax, eax
+    jnz @convert_loop
+    mov byte ptr [esi], '0'
+    mov byte ptr [esi+1], 0
+    jmp @done
+
+@convert_loop:
+    xor edx, edx      ; 清除 edx 準備除法
+    div ecx           ; 除以 10
+    add edx, '0'      ; 轉換餘數為字元
+    push edx          ; 暫存字元
+    inc edi           ; 增加位數
+    test eax, eax     ; 是否還有數字
+    jnz @convert_loop
+
+@reverse_loop:
+    pop edx           ; 取出字元
+    mov [esi], dl     ; 存入緩衝區
+    inc esi
+    dec edi
+    jnz @reverse_loop
+
+    mov byte ptr [esi], 0  ; 加入結束符
+
+@done:
+    push offset countComboStr
+    push offset buffer_4
+    call strcpy
+    add esp, 8
+
+    pop ebp
+    ret
+int_to_str_4 ENDP
+
 ; 創建rect
 create_rect PROC
     
@@ -887,6 +1072,10 @@ end_cleanup PROC
     call sfText_destroy
     add esp, 4
 
+    push string4Text
+    call sfText_destroy
+    add esp, 4
+
     push font
     call sfFont_destroy
     add esp, 4
@@ -914,10 +1103,14 @@ end_cleanup PROC
     push countScoreText
     call sfText_destroy
     add esp, 4 
+
+    push countComboText
+    call sfText_destroy
+    add esp, 4 
     ret
 end_cleanup ENDP
 
-end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count:DWORD, score:DWORD
+end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count:DWORD, score:DWORD, combo_count:DWORD
 
     mov eax, great_count
     mov countGreat, eax
@@ -927,6 +1120,8 @@ end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count
     mov countMiss, eax
     mov eax, score
     mov countScore, eax
+    mov eax, combo_count
+    mov countCombo, eax
 
     ; 載入背景
     call end_play_music
@@ -943,10 +1138,12 @@ end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count
     call setup_string1_text
     call setup_string2_text
     call setup_string3_text
+    call setup_string4_text
     call setup_countgreat_text
     call setup_countgood_text
     call setup_countmiss_text
     call setup_countscore_text
+    call setup_countcombo_text
 
 @main_loop:
     
@@ -1037,6 +1234,13 @@ end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count
         call sfRenderWindow_drawText
         add esp, 12
 
+        ; 繪製string4
+        push 0
+        push DWORD PTR [string4Text]
+        push DWORD PTR [window]
+        call sfRenderWindow_drawText
+        add esp, 12
+
         ; 繪製countgreat
         push 0
         push DWORD PTR [countGreatText]
@@ -1061,6 +1265,13 @@ end_game_page PROC window:DWORD, great_count:DWORD, good_count:DWORD, miss_count
         ; 繪製countscore
         push 0
         push DWORD PTR [countScoreText]
+        push DWORD PTR [window]
+        call sfRenderWindow_drawText
+        add esp, 12
+
+        ; 繪製countcombo
+        push 0
+        push DWORD PTR [countComboText]
         push DWORD PTR [window]
         call sfRenderWindow_drawText
         add esp, 12
