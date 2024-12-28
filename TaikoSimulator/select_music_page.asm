@@ -2,8 +2,10 @@
 .XMM
 .model flat, c
 include csfml.inc
+include file.inc
 
 extern currentPage: DWORD
+extern main_game_page: proc
 
 BUTTON_STATE_NORMAL equ 0
 BUTTON_STATE_PRESSED equ 1
@@ -21,6 +23,17 @@ Button ENDS
     bg_path db "assets/main/song_select_bg.jpg", 0
     font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
    
+   ; music1 資料
+   music1Info MusicInfo <130.000000, -1.962000, 115.384613>
+   music1_notes dword 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+                dword 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1
+                dword 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1
+   music1_totalNotes dword 90
+   music1_noteTimings real4 0.000000, 0.923077, 1.846154, 2.769229, 3.653842, 7.384611, 8.307688, 9.230764, 10.153841, 11.076918, 12.884617, 14.769233, 15.692309, 16.615387, 17.538464, 18.461540, 19.384617, 20.307693, 22.153847, 23.076923, 24.000000, 24.923077, 25.846153, 26.769230, 27.692307, 29.076921, 29.538460, 31.384613, 33.230766, 35.076920
+                real4 36.923073, 38.769226, 40.615379, 44.307686, 45.230762, 46.153839, 47.999992, 48.923069, 49.846146, 51.692299, 52.615376, 53.538452, 55.384605, 56.961456, 59.076828, 60.922981, 62.769135, 65.538368, 66.461449, 67.384529, 68.307610, 70.153763, 71.076843, 71.999924, 73.846077, 74.769157, 75.692238, 76.153778, 76.615318, 77.538399
+                real4 78.461479, 79.384560, 79.846100, 80.307640, 81.230721, 81.692261, 82.153801, 83.076881, 83.538422, 83.999962, 84.923042, 88.615349, 89.538429, 90.461510, 90.923050, 91.384590, 92.307671, 93.230751, 94.153831, 94.615372, 95.076912, 95.999992, 96.461533, 96.923073, 97.846153, 98.307693, 98.769234, 99.692314, 100.615395, 101.538475
+
+    ;music2Info MusicInfo <190.000000, -1.688000, 115.384613>
     ; 提示文字
     song1_string db "Yoru ni Kakeru", 0
     song2_string  db "Zen Zen Zense", 0
@@ -832,17 +845,38 @@ select_music_page PROC window:DWORD
 
 @keyA_enter:
     mov DWORD PTR [currentPage], 2
-    mov ebx, offset music1_path
+    call cleanup
+    push offset music1Info
+    push offset music1_noteTimings
+    push offset music1_totalNotes
+    push offset music1_notes
+    push offset music1_path
+    push dword ptr [window]
+    call main_game_page
     jmp @exit_program
 
 @keyS_enter:
     mov DWORD PTR [currentPage], 2
-    mov ebx, offset music2_path
+    call cleanup
+    push offset music1Info
+    push offset music1_noteTimings
+    push offset music1_totalNotes
+    push offset music1_notes
+    push offset music2_path
+    push dword ptr [window]
+    call main_game_page
     jmp @exit_program
 
 @keyD_enter:
     mov DWORD PTR [currentPage], 2
-    mov ebx, offset music3_path
+    call cleanup
+    push offset music1Info
+    push offset music1_noteTimings
+    push offset music1_totalNotes
+    push offset music1_notes
+    push offset music3_path
+    push dword ptr [window]
+    call main_game_page
     jmp @exit_program
     
 @render_window: 
@@ -934,7 +968,6 @@ select_music_page PROC window:DWORD
     mov DWORD PTR [currentPage], -1
 
 @exit_program:
-    call cleanup
     xor eax, eax
     ret
 

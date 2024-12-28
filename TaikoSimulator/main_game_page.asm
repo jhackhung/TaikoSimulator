@@ -46,7 +46,7 @@ INITIAL_DELAY = 3
     blue_note_sound_path db "assets/main/bluenote.wav", 0
 
 	stats GameStats <0, 0, 0, 0, 0, 0>
-	msInfo MusicInfo <130.000000, -1.962000, 115.384613>
+    msInfo MusicInfo <>
 
 	; queue for drums
 	drumQueue dword MAX_DRUMS dup(?) ; 存放Drum結構指針
@@ -84,15 +84,11 @@ INITIAL_DELAY = 3
 	gameStarted dword 0
 
 	; note chart
-	notes dword 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-          dword 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1
-          dword 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1
-	totalNotes dword 90
 	noteSpawnInterval real4 0.0
-	noteTimings real4 0.000000, 0.923077, 1.846154, 2.769229, 3.653842, 7.384611, 8.307688, 9.230764, 10.153841, 11.076918, 12.884617, 14.769233, 15.692309, 16.615387, 17.538464, 18.461540, 19.384617, 20.307693, 22.153847, 23.076923, 24.000000, 24.923077, 25.846153, 26.769230, 27.692307, 29.076921, 29.538460, 31.384613, 33.230766, 35.076920
-                real4 36.923073, 38.769226, 40.615379, 44.307686, 45.230762, 46.153839, 47.999992, 48.923069, 49.846146, 51.692299, 52.615376, 53.538452, 55.384605, 56.961456, 59.076828, 60.922981, 62.769135, 65.538368, 66.461449, 67.384529, 68.307610, 70.153763, 71.076843, 71.999924, 73.846077, 74.769157, 75.692238, 76.153778, 76.615318, 77.538399
-                real4 78.461479, 79.384560, 79.846100, 80.307640, 81.230721, 81.692261, 82.153801, 83.076881, 83.538422, 83.999962, 84.923042, 88.615349, 89.538429, 90.461510, 90.923050, 91.384590, 92.307671, 93.230751, 94.153831, 94.615372, 95.076912, 95.999992, 96.461533, 96.923073, 97.846153, 98.307693, 98.769234, 99.692314, 100.615395, 101.538475
 	drumStep real4 7.493056
+    notes dword 100 dup (?)
+    totalNotes dword ?
+    noteTimings real4 100 dup (?)
 
 	; color
 	blackColor sfColor <0, 0, 0, 255>
@@ -592,7 +588,38 @@ bluenote_sound PROC
     ret
 bluenote_sound ENDP
 
-main_game_page PROC window:dword,musicPath:dword,noteChart:dword
+main_game_page PROC window:dword,musicPath:dword,selected_notes:dword,selected_totalNotes,selected_notesTiming:dword,selected_msInfo:dword
+    ; 設定音樂資訊
+    ; Load music info structure
+    mov eax, selected_msInfo              ; Get pointer to music1Info
+    fld real4 ptr [eax]            ; Load tempo into FPU stack
+    fstp [msInfo.bpm]            ; Store tempo
+    fld real4 ptr [eax+4]          ; Load unknown value
+    fstp [msInfo._offset]          ; Store unknown value
+    fld real4 ptr [eax+8]          ; Load interval
+    fstp [msInfo.spawnTime]         ; Store interval
+    
+    ; Load total notes count
+    mov esi, selected_totalNotes   ; Get pointer to totalNotes
+    mov ecx, [esi]                 ; Load value
+    mov [totalNotes], ecx          ; Store locally
+    
+    ; Load notes array
+    mov esi, selected_notes        ; Get pointer to notes array
+    mov edi, offset notes                 ; Destination for notes
+    mov ecx, [totalNotes]          ; Counter for loop
+    rep movsd                      ; Copy all notes
+    
+    ; Load timing array
+    mov esi, selected_notesTiming  ; Get pointer to timing array
+    mov edi, offset noteTimings           ; Destination for timings
+    mov ecx, [totalNotes]          ; Counter for loop
+    rep movsd                      ; Copy all timings
+
+    mov eax, offset notes
+    mov eax, offset noteTimings
+    mov eax, offset msInfo
+
     mov eax, offset stats
     mov dword ptr [eax], 0      ; great_count
     mov dword ptr [eax+4], 0    ; good_count
