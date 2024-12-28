@@ -84,10 +84,14 @@ INITIAL_DELAY = 3
 	gameStarted dword 0
 
 	; note chart
-	notes dword 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 1
-	totalNotes dword 30
+	notes dword 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+          dword 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1
+          dword 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1
+	totalNotes dword 90
 	noteSpawnInterval real4 0.0
-	noteTimings real4 0.000000, 0.923077, 1.846154, 2.769229, 3.653842, 7.384611, 8.307688, 9.230764, 10.153841, 11.076918, 12.884617, 14.769233, 15.692309, 16.615387, 17.538464, 18.461540, 19.384617, 20.307693, 22.153847, 23.076923, 24.000000, 24.923077, 25.846153, 26.769230, 27.692307, 28.615384, 29.538461, 30.461538, 31.384615, 32.307692
+	noteTimings real4 0.000000, 0.923077, 1.846154, 2.769229, 3.653842, 7.384611, 8.307688, 9.230764, 10.153841, 11.076918, 12.884617, 14.769233, 15.692309, 16.615387, 17.538464, 18.461540, 19.384617, 20.307693, 22.153847, 23.076923, 24.000000, 24.923077, 25.846153, 26.769230, 27.692307, 29.076921, 29.538460, 31.384613, 33.230766, 35.076920
+                real4 36.923073, 38.769226, 40.615379, 44.307686, 45.230762, 46.153839, 47.999992, 48.923069, 49.846146, 51.692299, 52.615376, 53.538452, 55.384605, 56.961456, 59.076828, 60.922981, 62.769135, 65.538368, 66.461449, 67.384529, 68.307610, 70.153763, 71.076843, 71.999924, 73.846077, 74.769157, 75.692238, 76.153778, 76.615318, 77.538399
+                real4 78.461479, 79.384560, 79.846100, 80.307640, 81.230721, 81.692261, 82.153801, 83.076881, 83.538422, 83.999962, 84.923042, 88.615349, 89.538429, 90.461510, 90.923050, 91.384590, 92.307671, 93.230751, 94.153831, 94.615372, 95.076912, 95.999992, 96.461533, 96.923073, 97.846153, 98.307693, 98.769234, 99.692314, 100.615395, 101.538475
 	drumStep real4 7.493056
 
 	; color
@@ -116,8 +120,11 @@ INITIAL_DELAY = 3
 	decimal_mult  dq 0.1                  ; 小數位數乘數
     ten           dq 10.0                 ; 用於乘法運算
 	real_2 real4 2.0
+    real_15 real4 15.0
     real_30 real4 30.0
 	real_32 real4 32.0
+    real_46 real4 46.0
+    real_64 real4 64.0
     real_200 real4 200.0
     real_225 real4 225.0
     real_450 real4 450.0
@@ -275,7 +282,8 @@ updateDrums PROC USES esi edi ebx
 
     ; 檢查音符是否完全超出判定圓圈
     ; 判定圓圈左邊緣 = 450 - 30 = 420
-    addss xmm0, real_32   ; 加上音符寬度(約32像素)
+    ; 音符右邊緣 = x + 64
+    addss xmm0, real_64   ; 加上音符半徑寬度(約32像素)
     movss xmm1, real_450  ; 載入判定圈x座標
     subss xmm1, real_30   ; 減去半徑，獲得左邊緣
     comiss xmm0, xmm1     ; 比較 (note.x + width) < (circle.x - radius)
@@ -285,6 +293,12 @@ updateDrums PROC USES esi edi ebx
     push [esi]
     call sfSprite_destroy
     add esp, 4
+
+    ; 更新miss and current_combo 統計數據
+    mov eax, offset stats
+    inc dword ptr [eax+8]            ; miss_count++
+    mov dword ptr [eax+12], 0        ; current_combo = 0
+    
     inc front
     cmp front, MAX_DRUMS
     jb SkipFrontWrap2
@@ -446,14 +460,14 @@ processHit proc uses ebx esi edi hitType:DWORD
     mov edi, front
     mov esi, drumQueue[edi*4]
     
-    ; 獲取音符位置
+    ; 獲取音符位置(取到音符top_left位置)
     push dword ptr [esi]
     call sfSprite_getPosition
     add esp, 4
     
-    ; 計算與判定線的距離 (450是判定線位置)
+    ; 計算與判定線的距離 (450是判定線位置，也是judgement circle的圓心) 兩圓心比較
     subss xmm0, real_450
-    addss xmm0, real_30
+    addss xmm0, real_32 ; 加上音符半徑
     
     ; 取絕對值
     andps xmm0, [abs_mask]
@@ -461,25 +475,30 @@ processHit proc uses ebx esi edi hitType:DWORD
     ; 首先檢查音符類型是否匹配
     mov edx, dword ptr [esi+4]
     cmp edx, [hitType]
-    jne @miss_hit         ; 如果類型不匹配，直接判定為MISS
+    jne @done_processing         ; 如果類型不匹配，跳出processHit
     
-    ; GREAT判定 (誤差 <= 25)
-    movss xmm1, real_30       ; 載入判定圈半徑
-    subss xmm1, real_4        ; 25單位
-    comiss xmm0, xmm1         ; 比較音符中心點距離是否 <= 25
+    ; 判斷音符是否在判定圈內
+    movss xmm1, real_30    ; 載入判定圈半徑
+    addss xmm1, real_32    ; 加上音符半徑
+    comiss xmm0, xmm1      ; 比較音符中心點距離是否 >= 30
+    jae @done_processing     ; 如果距離 > 30，直接跳過
+
+    ; GREAT判定 (誤差 <= 15)
+    movss xmm1, real_15       ; 載入判定圈半徑   
+    comiss xmm0, xmm1         ; 比較音符中心點距離是否 <= 15
     jbe @great_hit
-    
+
     ; MISS判定 (誤差 > 40)
-    movss xmm2, real_30       ; 載入判定圈半徑
-    addss xmm2, real_2        ; 加上10個單位
-    addss xmm2, real_2
-    addss xmm2, real_2
-    addss xmm2, real_2
-    addss xmm2, real_2
-    comiss xmm0, xmm2         ; 比較是否 > 40
-    ja @miss_hit
+    ;movss xmm2, real_30       ; 載入判定圈半徑
+    ;addss xmm2, real_2        ; 加上10個單位
+    ;addss xmm2, real_2
+    ;addss xmm2, real_2
+    ;addss xmm2, real_2
+    ;addss xmm2, real_2
+    ;comiss xmm0, xmm2         ; 比較是否 > 40
+    ;ja @miss_hit
     
-    ; 其餘情況 -> GOOD
+    ; 其餘情況 -> GOOD 誤差 <= 30
     jmp @good_hit
     
 @great_hit:
@@ -519,10 +538,10 @@ processHit proc uses ebx esi edi hitType:DWORD
     jmp @remove_note
     
 @miss_hit:
-    mov eax, offset stats
-    inc dword ptr [eax+8]            ; miss_count
-    mov dword ptr [eax+12], 0        ; current_combo = 0
-    jmp @done_processing
+    ;mov eax, offset stats
+    ;inc dword ptr [eax+8]            ; miss_count
+    ;mov dword ptr [eax+12], 0        ; current_combo = 0
+    ;jmp @done_processing
     
 @remove_note:
     call dequeue
