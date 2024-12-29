@@ -26,15 +26,15 @@ MusicInfo struct
 MusicInfo ends
 
 extern malloc:proc
-extern fopen:proc
-extern fclose:proc
-extern fgets:proc
+;extern fopen:proc
+;extern fclose:proc
+;extern fgets:proc
 
 
 ; string
 
-extern strcspn:proc
-extern strncmp:proc
+;extern strcspn:proc
+;extern strncmp:proc
 ;extern __imp____stdio_common_vsscanf:proc
-extern strtok_s:proc
-extern strlen:proc
+;extern strtok_s:proc
+;extern strlen:proc

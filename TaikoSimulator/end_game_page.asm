@@ -16,7 +16,7 @@ Button ENDS
 .data
     music_path db "assets/music/Anata ni Koi wo Shite Mimashita.ogg", 0   
     bg_path db "assets/main/end_bg.jpg", 0
-    font_path db "assets/main/Taiko_No_Tatsujin_Official_Font.ttf", 0
+    font_path db "assets/fonts/Taiko_No_Tatsujin_Official_Font.ttf", 0
 
     ; ´£¥Ü¤å¦r
     string1 db "Great", 0          

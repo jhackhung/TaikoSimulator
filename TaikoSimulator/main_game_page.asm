@@ -3,11 +3,6 @@
 .model flat, c
 include csfml.inc
 include file.inc
-includelib kernel32.lib
-
-extern GetStdHandle@4: PROC
-extern WriteConsoleA@20:PROC
-STD_OUTPUT_HANDLE EQU -11
 
 extern end_game_page: PROC
 extern currentPage: DWORD
@@ -38,7 +33,6 @@ INITIAL_DELAY = 3
     redNoteSound dd 0    ; 紅色音符音效
     blueNoteSound dd 0   ; 藍色音符音效
 
-	chart db "assets/game/yoasobi.txt", 0
 	bgPath db "assets/game/bg_genre_2.jpg", 0
 	redNotePath db "assets/game/red_note.png", 0
 	blueNotePath db "assets/game/blue_note.png", 0
@@ -58,7 +52,7 @@ INITIAL_DELAY = 3
 	redDrumTexture dword ?
 	blueDrumTexture dword ?
 
-	font_path db "assets/fonts/arial.ttf", 0
+	font_path db "assets/fonts/Taiko_No_Tatsujin_Official_Font.ttf", 0
 	font dd 0
 
 	; text
@@ -95,18 +89,6 @@ INITIAL_DELAY = 3
     white_color sfColor <230, 230, 230, 200>
 	transparentColor sfColor <255, 255, 255, 50>
 
-	; file
-	readA byte "r", 0
-
-	; 字串常量
-	str_bpm db "BPM:", 0
-	str_offset db "OFFSET:", 0
-	str_start db "#START", 0
-	str_end db "#END", 0
-	comma db ",", 0
-	breakline db "\n", 0
-	;format db "%", 0
-
 	getBpm db "BPM:%f", 0
 	getOffset db "OFFSET:%f", 0
 
@@ -133,11 +115,6 @@ INITIAL_DELAY = 3
     real_0 real4 0.0
     loop_index dword 0
 .code
-
-readNoteChart PROC
-
-
-readNoteChart ENDP
 
 isQueueFull PROC
     mov eax, _size
@@ -483,16 +460,6 @@ processHit proc uses ebx esi edi hitType:DWORD
     movss xmm1, real_15       ; 載入判定圈半徑   
     comiss xmm0, xmm1         ; 比較音符中心點距離是否 <= 15
     jbe @great_hit
-
-    ; MISS判定 (誤差 > 40)
-    ;movss xmm2, real_30       ; 載入判定圈半徑
-    ;addss xmm2, real_2        ; 加上10個單位
-    ;addss xmm2, real_2
-    ;addss xmm2, real_2
-    ;addss xmm2, real_2
-    ;addss xmm2, real_2
-    ;comiss xmm0, xmm2         ; 比較是否 > 40
-    ;ja @miss_hit
     
     ; 其餘情況 -> GOOD 誤差 <= 30
     jmp @good_hit
@@ -532,12 +499,6 @@ processHit proc uses ebx esi edi hitType:DWORD
     jle @remove_note
     mov dword ptr [eax+16], ecx      ; 更新max_combo
     jmp @remove_note
-    
-@miss_hit:
-    ;mov eax, offset stats
-    ;inc dword ptr [eax+8]            ; miss_count
-    ;mov dword ptr [eax+12], 0        ; current_combo = 0
-    ;jmp @done_processing
     
 @remove_note:
     call dequeue
